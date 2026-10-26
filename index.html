@@ -2432,6 +2432,22 @@ let postAutoOff=false,perfNow=0,lastT=0,lastEnvCourse=-1,ready=false,fpsAcc=0,fp
 const _w=new THREE.Vector3(),_yq=new THREE.Quaternion(),_up=new THREE.Vector3(0,1,0);
 // a thrown error inside the render loop would stop three.js from scheduling the next frame, so every frame is guarded
 let frameErrs=0,lastErrT=0;
+// black-screen watchdog: sample a few pixels once a second; if the picture stays black, peel back features until it shows
+const SHOT=new Uint8Array(4),shaderErrs=[];let blackT=0,blackN=0;
+{const ce=console.error.bind(console);console.error=(...a)=>{try{const m=a.map(x=>x&&x.message?x.message:String(x)).join(' ');if(/WebGLProgram|shader|GL_|WebGL/i.test(m))shaderErrs.push(m.replace(/\s+/g,' ').slice(0,160))}catch(_){}ce(...a)}}
+function gpuName(){try{const gl=renderer.getContext(),ext=gl.getExtension('WEBGL_debug_renderer_info');return ext?gl.getParameter(ext.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER)}catch(_){return'unknown graphics'}}
+function checkBlack(dt){
+  if(!ready||ctxLost||renderer.xr.isPresenting||document.hidden)return;blackT+=Math.min(dt,1);if(blackT<1)return;blackT=0;
+  const gl=renderer.getContext(),w=gl.drawingBufferWidth,h=gl.drawingBufferHeight;let sum=0;
+  for(const [x,y] of [[.5,.62],[.25,.8],[.75,.8],[.5,.92],[.3,.35],[.7,.35]]){gl.readPixels(Math.floor(x*w),Math.floor(y*h),1,1,gl.RGBA,gl.UNSIGNED_BYTE,SHOT);sum+=SHOT[0]+SHOT[1]+SHOT[2]}
+  if(sum<30){if(++blackN>=2){blackN=0;fixBlack()}}else blackN=0}
+function fixBlack(){
+  const why=shaderErrs.length?' Error: '+shaderErrs[shaderErrs.length-1]:'';
+  if(POST.on&&POST.ok){POST.ok=false;toast('The screen came up black, so screen effects were turned off.'+why,9000);return}
+  if(REFL.on){REFL.on=false;reflApply();return}
+  if(!gfxLow){setTier('low');save.gfx='low';persist();applyGfx();toast('The screen came up black, so graphics were set to LOW.'+why,9000);return}
+  ctxNotice('The 3D view is still black on this device ('+gpuName()+').'+why+' Please send Claude this message.',true);
+}
 function stepDown(why){if(gfxUltra)setTier('high');else if(POST.on&&!postAutoOff){postAutoOff=true;POST.on=false}else setTier('low');
   applyGfx();toast(why+', so graphics were lowered to '+(POST.on?gfxTier.toUpperCase():gfxLow?'LOW':'HIGH (no screen effects)')+'. You can change this under GRAPHICS.',7000)}
 function frame(t,xf){if(ctxLost)return;try{frameMain(t,xf)}catch(e){console.error(e);renderer.setRenderTarget(null);const now=performance.now();
@@ -2505,6 +2521,7 @@ function frameMain(t){
     const sp=(state==='play')?clamp((P.v/Math.max(ST.vmax,1)-.72)*2.2,0,1)*.55+(P.boosting?.45:0):0;
     try{POST.render(dt,sp,P.boosting&&state==='play'?1:0)}catch(e){console.error(e);POST.ok=false;renderer.setRenderTarget(null);toast('Screen effects are not supported on this device, so they are off.');renderer.render(scene,camera)}
   }else renderer.render(scene,camera);
+  checkBlack(rawDt);
 }
 
 /* =========================================================
