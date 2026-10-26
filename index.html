@@ -575,8 +575,17 @@ const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-per
 renderer.setPixelRatio(prFor());
 renderer.setSize(stage.clientWidth||innerWidth,stage.clientHeight||innerHeight);
 renderer.xr.enabled=true;
-renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();try{save.gfx=gfxUltra?'high':'low';persist()}catch(_){}
-  const t=document.getElementById('toast');if(t){t.textContent='Your graphics card ran out of memory. Reloading with lighter graphics…';t.hidden=false}setTimeout(()=>location.reload(),1500)});
+let ctxLost=false,ctxTimer=0;
+function ctxNotice(msg,showReload){const t=document.getElementById('toast');if(!t)return;t.innerHTML='';const sp=document.createElement('span');sp.textContent=msg;t.appendChild(sp);
+  if(showReload){const b=document.createElement('button');b.className='btn';b.style.marginLeft='10px';b.textContent='RELOAD GAME';b.onclick=()=>{try{location.reload()}catch(_){}};t.appendChild(b)}t.hidden=false;clearTimeout(toast._t)}
+renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();ctxLost=true;
+  const next=gfxUltra?'high':'low';try{save.gfx=next;persist()}catch(_){}
+  ctxNotice('Your graphics card ran out of memory. Restoring the game with '+next.toUpperCase()+' graphics…',false);
+  clearTimeout(ctxTimer);ctxTimer=setTimeout(()=>{if(ctxLost)ctxNotice('The graphics card did not come back on its own.',true)},5000)},false);
+renderer.domElement.addEventListener('webglcontextrestored',()=>{ctxLost=false;clearTimeout(ctxTimer);
+  try{setTier(tierFor(save.gfx));POST.reset();REFL.reset();if(sunLight.shadow.map){sunLight.shadow.map=null}applyGfx();envTex=null;refreshEnv();warmShaders();
+    const t=document.getElementById('toast');t.textContent='Game restored with '+gfxTier.toUpperCase()+' graphics.';t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>{t.hidden=true},5000)}
+  catch(err){console.error(err);ctxNotice('Restoring graphics failed.',true)}},false);
 renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.95;
 renderer.shadowMap.enabled=!gfxLow;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 stage.appendChild(renderer.domElement);
@@ -641,7 +650,7 @@ document.addEventListener('fullscreenchange',fsLabel);document.addEventListener(
 
 const hemi=new THREE.HemisphereLight(0xffffff,0x444444,.85);scene.add(hemi);
 const sunLight=new THREE.DirectionalLight(0xffffff,1.4);scene.add(sunLight);scene.add(sunLight.target);
-const shadowRes=()=>gfxUltra&&renderer.capabilities.maxTextureSize>=8192?4096:2048;
+const shadowRes=()=>2048;
 sunLight.castShadow=!gfxLow;sunLight.shadow.mapSize.set(shadowRes(),shadowRes());{const sc=sunLight.shadow.camera,e=gfxUltra?46:38;sc.left=-e;sc.right=e;sc.top=e;sc.bottom=-e;sc.near=20;sc.far=420}sunLight.shadow.bias=-.0004;sunLight.shadow.normalBias=.04;
 
 /* ---------- canvas textures */
@@ -1188,7 +1197,7 @@ function refreshEnv(){
   allCarMats.concat([roadMat,waterMat,terrainMatHQ]).forEach(m=>{const first=!m.envMap;m.envMap=envTex;if(first)m.needsUpdate=true});if(REFL.on&&REFL.env)reflApply();
 }
 const allCarMats=[];
-const REFL={rt:null,cam:null,face:0,frames:0,env:null,on:false};
+const REFL={rt:null,cam:null,face:0,frames:0,env:null,on:false,reset(){if(this.cam)scene.remove(this.cam);this.rt=null;this.cam=null;this.env=null;this.face=0;this.frames=0}};
 function reflInit(){if(REFL.rt)return;REFL.rt=new THREE.WebGLCubeRenderTarget(128,{format:THREE.RGBAFormat,generateMipmaps:false,minFilter:THREE.LinearFilter});REFL.cam=new THREE.CubeCamera(.5,2200,REFL.rt);scene.add(REFL.cam)}
 function reflUpdate(){
   if(!REFL.on||!player)return;reflInit();REFL.tick=(REFL.tick||0)+1;if(REFL.tick%2)return;
@@ -2389,7 +2398,7 @@ const POST=(()=>{
     shaftRT=new THREE.WebGLRenderTarget(Math.max(1,w>>2),Math.max(1,h>>2),rtOpt);W0=w;H0=h;U.res.value.set(w,h);U.asp.value=w/h;mShaft.uniforms.asp.value=w/h;
   }
   const sv=new THREE.Vector3(),cf=new THREE.Vector3(),blackTex=new THREE.DataTexture(new Uint8Array([0,0,0,255]),1,1,THREE.RGBAFormat);blackTex.needsUpdate=true;
-  const api={on:false,ok:true,shaftK:0,
+  const api={on:false,ok:true,shaftK:0,reset(){W0=H0=0;sceneRT=null;shaftRT=null;downs=[];ups=[]},
     grade(A,B,t){const a=GRADES[COURSES.indexOf(A)],b=GRADES[COURSES.indexOf(B)];if(!a||!b)return;
       U.lift.value.set(lerp(a[0][0],b[0][0],t),lerp(a[0][1],b[0][1],t),lerp(a[0][2],b[0][2],t));U.gain.value.set(lerp(a[1][0],b[1][0],t),lerp(a[1][1],b[1][1],t),lerp(a[1][2],b[1][2],t));
       U.sat.value=lerp(a[2],b[2],t)*(1-wetness*.12-fogK*.08);U.con.value=lerp(a[3],b[3],t);
@@ -2425,7 +2434,7 @@ const _w=new THREE.Vector3(),_yq=new THREE.Quaternion(),_up=new THREE.Vector3(0,
 let frameErrs=0,lastErrT=0;
 function stepDown(why){if(gfxUltra)setTier('high');else if(POST.on&&!postAutoOff){postAutoOff=true;POST.on=false}else setTier('low');
   applyGfx();toast(why+', so graphics were lowered to '+(POST.on?gfxTier.toUpperCase():gfxLow?'LOW':'HIGH (no screen effects)')+'. You can change this under GRAPHICS.',7000)}
-function frame(t,xf){try{frameMain(t,xf)}catch(e){console.error(e);renderer.setRenderTarget(null);const now=performance.now();
+function frame(t,xf){if(ctxLost)return;try{frameMain(t,xf)}catch(e){console.error(e);renderer.setRenderTarget(null);const now=performance.now();
     if(now-lastErrT>3000)frameErrs=0;lastErrT=now;frameErrs++;
     if(frameErrs===1){REFL.on=false;toast('Graphics error: '+String(e&&e.message||e).slice(0,140)+'. Live reflections turned off.',8000)}
     else if(frameErrs===4){stepDown('Graphics errors kept happening')}
