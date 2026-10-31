@@ -7,14 +7,12 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<style>html,body{margin:0}[hidden]{display:none!important}</style>
-</head>
-<body>
 <title>Cruising USA VR</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,500;0,600;0,700;0,800;1,700;1,800&family=Barlow:wght@400;500;600&family=Bungee&display=swap">
 <style>
+[hidden]{display:none!important}
 /* Layout concept: a full-bleed live road at night-blue, with highway-signage panels (guide-sign green, interstate shield, sodium-lamp amber) docked to the screen edges. */
 :root{
   --ink:#050713;
@@ -114,6 +112,11 @@ h1 em{font-style:normal;color:var(--amber)}
 .pop.show{animation:popup .9s ease-out forwards}
 @keyframes popup{0%{opacity:0;transform:translate(-50%,14px) scale(.9)}15%{opacity:1;transform:translate(-50%,0) scale(1.06)}70%{opacity:1}100%{opacity:0;transform:translate(-50%,-24px)}}
 body.is-touch .fxchips{top:64px}body.is-touch .fxchips span{font-size:10px;padding:3px 8px}body.is-touch .pop{font-size:20px;top:52%}
+.tum{color:var(--amber);text-decoration:none;letter-spacing:.04em;text-transform:none}.tum:hover{text-decoration:underline}
+.vrset{border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:rgba(255,255,255,.03)}
+.vrset summary{cursor:pointer;list-style:none}.vrset summary::before{content:'▸ ';}.vrset[open] summary::before{content:'▾ ';}
+.vrgrid{display:grid;grid-template-columns:auto 1fr;gap:8px 10px;align-items:center;margin-top:8px}.vrgrid .seg button{padding:6px 12px;font-size:13px}
+#seatVal{color:var(--text)!important;min-width:64px}
 .lvl{display:flex;align-items:center;gap:10px;font-family:var(--f-hud);font-weight:700;letter-spacing:.12em;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
 .lvl b{background:var(--amber);color:var(--amber-ink);padding:3px 9px;border-radius:4px;font-size:15px;font-style:italic;font-weight:800}
 .xpbar{flex:1;min-width:60px;height:7px;background:rgba(255,255,255,.12);border-radius:4px;overflow:hidden}
@@ -339,11 +342,25 @@ body.is-touch .banner .b3{font-size:11px;margin-top:3px}
           <button class="btn" id="fsBtn">⛶ FULL SCREEN</button>
           <button class="btn" id="vrBtn">◉ ENTER VR</button>
           <button class="btn" id="soundBtn">♪ SOUND ON</button>
-          <button class="btn" id="musicBtn">♫ MUSIC ON</button>
+          <button class="btn" id="musicBtn">♫ MUSIC · GAME</button>
           <button class="btn" id="gfxBtn">▣ GRAPHICS AUTO</button>
         </div>
       </div>
-      <p class="keys"><kbd>A</kbd>/<kbd>D</kbd> or <kbd>←</kbd>/<kbd>→</kbd> steer · <kbd>W</kbd>/<kbd>↑</kbd> gas · <kbd>S</kbd>/<kbd>↓</kbd> brake · <kbd>SPACE</kbd> boost · <kbd>C</kbd> camera · <kbd>P</kbd> autopilot · <kbd>T</kbd> weather · <kbd>ESC</kbd> pause · <kbd>F</kbd> full screen<br>VR: right trigger gas · left trigger brake · thumbstick steer · grip boost · A autopilot</p>
+      <div class="field" id="radioField" hidden>
+        <span class="label">Turn Up Radio · <a href="https://turnupmusic.online" target="_blank" rel="noopener" class="tum">turnupmusic.online</a></span>
+        <div class="ride-card"><button class="arrow" id="radioL" aria-label="Previous station">‹</button>
+          <div class="ride-info"><div class="ride-name" id="radioName">Station</div><div class="ride-stats" id="radioTag">Genre</div></div>
+          <button class="arrow" id="radioR" aria-label="Next station">›</button></div>
+      </div>
+      <details class="vrset" id="vrSet"><summary class="label">VR options</summary>
+        <div class="vrgrid">
+          <span class="label">View</span><div class="seg" id="vrView"></div>
+          <span class="label">Comfort</span><div class="seg" id="vrVig"></div>
+          <span class="label">Seat height</span><div class="seg" id="vrSeat"><button id="seatDn" aria-label="Lower seat">−</button><button id="seatVal" disabled>0 cm</button><button id="seatUp" aria-label="Raise seat">+</button></div>
+        </div>
+        <p class="hint">Sit or stand however you like, then press <b>B</b> (right controller) to recenter: your head becomes the driver's eyes. Right stick up/down raises or lowers the seat. <b>Y</b> changes view, <b>X</b> changes radio station.</p>
+      </details>
+      <p class="keys"><kbd>A</kbd>/<kbd>D</kbd> or <kbd>←</kbd>/<kbd>→</kbd> steer · <kbd>W</kbd>/<kbd>↑</kbd> gas · <kbd>S</kbd>/<kbd>↓</kbd> brake · <kbd>SPACE</kbd> boost · <kbd>C</kbd> camera · <kbd>P</kbd> autopilot · <kbd>T</kbd> weather · <kbd>ESC</kbd> pause · <kbd>F</kbd> full screen · <kbd>R</kbd> next radio station<br>VR: right trigger gas · left trigger brake · thumbstick steer · grip boost · A autopilot · B recenter · Y view · X station</p>
       <div class="loading" id="loading">PAVING 36 KM OF HIGHWAY…</div>
     </div>
   </section>
@@ -375,6 +392,7 @@ body.is-touch .banner .b3{font-size:11px;margin-top:3px}
         <button class="btn primary" id="resumeBtn">RESUME</button>
         <button class="btn" id="restartBtn">RESTART ROUTE</button>
         <button class="btn" id="menuBtn">MAIN MENU</button>
+        <button class="btn" id="pRadio">📻 NEXT STATION</button>
         <div class="row pause-toggles"><button class="btn" id="pCam"></button><button class="btn" id="pPilot"></button><button class="btn" id="pWx"></button><button class="btn" id="pGas"></button></div>
       </div>
     </div>
@@ -492,7 +510,7 @@ const TOOLS=[['launch','LAUNCH CONTROL','Perfect start: +45 MPH the moment the l
 
 const DEFAULT_SAVE={credits:1200,owned:[0],car:0,paint:0,finish:0,wheel:0,glow:0,up:{engine:0,handling:0,nitro:0},startCourse:0,mode:'race',sound:true,gfx:'auto',autoGas:true,livery:0,raceNo:7};
 const save=store.get('cruising-usa-vr',DEFAULT_SAVE);
-save.up=Object.assign({engine:0,handling:0,nitro:0,turbo:0,grip:0,recharge:0,aero:0},save.up||{});if(typeof save.xp!=='number')save.xp=0;save.tools=Object.assign({launch:1,shield:0,magnet:0,nitro:0},save.tools||{});save.equip=Object.assign({launch:true,shield:true,magnet:true,nitro:true},save.equip||{});save.events=save.events||{};save.prizes=save.prizes||[];if(typeof save.eventIdx!=='number')save.eventIdx=0;
+save.up=Object.assign({engine:0,handling:0,nitro:0,turbo:0,grip:0,recharge:0,aero:0},save.up||{});if(typeof save.xp!=='number')save.xp=0;if(!save.musicSrc)save.musicSrc=save.music===false?'off':'game';if(typeof save.radio!=='number')save.radio=0;save.vr=Object.assign({view:'cockpit',vignette:true,seat:0},save.vr||{});save.tools=Object.assign({launch:1,shield:0,magnet:0,nitro:0},save.tools||{});save.equip=Object.assign({launch:true,shield:true,magnet:true,nitro:true},save.equip||{});save.events=save.events||{};save.prizes=save.prizes||[];if(typeof save.eventIdx!=='number')save.eventIdx=0;
 if(!Array.isArray(save.owned))save.owned=[0];
 const persist=()=>store.set('cruising-usa-vr',save);
 const LOWDEV=matchMedia('(pointer:coarse)').matches||/Android|iPhone|iPad|Quest|OculusBrowser|Mobile|Pico/i.test(navigator.userAgent)||(navigator.hardwareConcurrency||8)<=2||(navigator.deviceMemory||8)<=2;
@@ -1641,6 +1659,7 @@ function applyCustom(car){const fin=FINISHES[save.finish],wh=WHEELS[save.wheel],
   car.rim.color.setHex(wh[1]);car.rim.metalness=wh[2];car.rim.roughness=wh[3];setGlow(car,save.glow)}
 
 // cockpit (VR + cockpit camera)
+function seatStep(d){save.vr.seat=clamp(Math.round((save.vr.seat+d)*100)/100,-.4,.4);persist();renderVRSet()}
 function addCockpit(car){
   const ck=new THREE.Group(),e=car.eye;
   const dash=new THREE.Mesh(BX(1.85,.22,.5),darkMat);dash.position.set(0,e.y-.3,e.z-.72);ck.add(dash);
@@ -1649,10 +1668,26 @@ function addCockpit(car){
   const hubG=new THREE.Group();wheelG.add(hubG);
   for(let i=0;i<3;i++){const sp=new THREE.Mesh(BX(.035,.19,.02),darkMat);sp.position.y=-.09;const a=new THREE.Group();a.rotation.z=i*Math.PI*2/3+Math.PI;a.add(sp);hubG.add(a)}
   hubG.add(new THREE.Mesh(CY(.05,.05,.04,12),new THREE.MeshLambertMaterial({color:0xd22a43})).rotateX(Math.PI/2));
-  const hud=new THREE.Mesh(new THREE.PlaneGeometry(.52,.2),new THREE.MeshBasicMaterial({map:vrTex,transparent:true,fog:false}));hud.position.set(.18,e.y-.12,e.z-.82);hud.rotation.x=-.2;ck.add(hud);
   ck.visible=false;car.group.add(ck);car.cockpit=ck;car.steerWheel=wheelG;
 }
-const [vrCanvas,vctx]=cvs(520,200);const vrTex=new THREE.CanvasTexture(vrCanvas);
+const [vrCanvas,vctx]=cvs(640,260);const vrTex=new THREE.CanvasTexture(vrCanvas);vrTex.anisotropy=4;
+// VR rig: rig (car eye position, car heading) → xrOff (recenter offset) → camera (headset pose)
+const xrOff=new THREE.Group();rig.add(xrOff);
+const vrHud=new THREE.Mesh(new THREE.PlaneGeometry(.62,.252),new THREE.MeshBasicMaterial({map:vrTex,transparent:true,fog:false,depthTest:false,toneMapped:false}));
+vrHud.renderOrder=20;vrHud.visible=false;rig.add(vrHud);
+const vigMat=new THREE.ShaderMaterial({transparent:true,depthTest:false,depthWrite:false,uniforms:{k:{value:0}},
+  vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+  fragmentShader:'uniform float k;varying vec2 vUv;void main(){float d=length(vUv-.5)*2.;float a=smoothstep(mix(.95,.42,k),1.05,d)*k;gl_FragColor=vec4(0.,0.,0.,a*.92);}'});
+const vig=new THREE.Mesh(new THREE.PlaneGeometry(.9,.9),vigMat);vig.position.z=-.25;vig.renderOrder=30;vig.visible=false;vig.frustumCulled=false;camera.add(vig);
+const VR={view:save.vr.view,recenterAt:0,yaw:0,hudY:0};
+const VR_VIEWS=['cockpit','hood','chase'],_vrE=new THREE.Euler(),_vrV=new THREE.Vector3();
+function vrRecenter(){const h=camera.position.clone();_vrE.setFromQuaternion(camera.quaternion,'YXZ');const yaw=_vrE.y;
+  xrOff.rotation.set(0,-yaw,0);xrOff.position.copy(h).applyAxisAngle(_up,-yaw).negate();vrMsg='VIEW RECENTERED';vrMsgT=1.6}
+function vrSetView(v){VR.view=save.vr.view=v;persist();renderVRSet();vrMsg='VIEW · '+v.toUpperCase();vrMsgT=1.8;VR.recenterAt=performance.now()+250}
+function renderVRSet(){
+  seg($('vrView'),VR_VIEWS.map(v=>v.toUpperCase()),VR_VIEWS.indexOf(save.vr.view),i=>vrSetView(VR_VIEWS[i]));
+  seg($('vrVig'),['VIGNETTE ON','OFF'],save.vr.vignette?0:1,i=>{save.vr.vignette=i===0;persist();renderVRSet()});
+  $('seatVal').textContent=(save.vr.seat>0?'+':'')+Math.round(save.vr.seat*100)+' cm'}
 
 /* =========================================================
    Environment blending
@@ -1722,7 +1757,7 @@ const AU={ctx:null,
     const loopN=(type,f,q,g)=>{const b=ctx.createBufferSource();b.buffer=nb;b.loop=true;const fl=ctx.createBiquadFilter();fl.type=type;fl.frequency.value=f;fl.Q.value=q;const gg=ctx.createGain();gg.gain.value=0;b.connect(fl);fl.connect(gg);gg.connect(m);b.start(0,Math.random()*1.5);return{g:gg,f:fl}};
     this.road=loopN('lowpass',420,.7);this.wind=loopN('bandpass',900,.5);this.boostN=loopN('bandpass',1200,.9);this.rain=loopN('bandpass',2600,.4);
     // music bus with a lowpass and a soft echo for the lead
-    this.mus=ctx.createGain();this.mus.gain.value=save.music===false?0:.55;const mLP=ctx.createBiquadFilter();mLP.type='lowpass';mLP.frequency.value=4200;this.mus.connect(mLP);mLP.connect(m);
+    this.mus=ctx.createGain();this.mus.gain.value=save.musicSrc==='game'?.55:0;const mLP=ctx.createBiquadFilter();mLP.type='lowpass';mLP.frequency.value=4200;this.mus.connect(mLP);mLP.connect(m);
     const dl=ctx.createDelay(1);dl.delayTime.value=60/100*.75;const fb=ctx.createGain();fb.gain.value=.28;const wet=ctx.createGain();wet.gain.value=.32;this.echo=ctx.createGain();
     this.echo.connect(dl);dl.connect(fb);fb.connect(dl);dl.connect(wet);wet.connect(this.mus);this.echo.connect(this.mus);
     this.step=0;this.next=ctx.currentTime+.2;setInterval(()=>this.sched(),25);
@@ -1747,7 +1782,7 @@ const AU={ctx:null,
     const o=c.createOscillator(),og=c.createGain();o.type='sine';o.frequency.setValueAtTime(95,t);o.frequency.exponentialRampToValueAtTime(38,t+.2);og.gain.setValueAtTime(.35*k,t);og.gain.exponentialRampToValueAtTime(.001,t+.25);o.connect(og);og.connect(this.sfx);o.start(t);o.stop(t+.27)},
   sched(){const c=this.ctx;if(!c||c.state!=='running')return;const sp=60/100/4;if(this.next<c.currentTime-.05)this.next=c.currentTime+.05;let guard=0;while(guard++<16&&this.next<c.currentTime+.15){this.play(this.step,this.next);this.next+=sp;this.step++}},
   play(i,t){
-    if(save.music===false)return;
+    if(save.musicSrc!=='game')return;
     const c=this.ctx,st=i%16,bar=Math.floor(i/16)%4,roots=[45,41,48,43],minor=[1,0,0,0][bar],chord=minor?[0,3,7]:[0,4,7],mf=n=>440*Math.pow(2,(n-69)/12);
     const env=(o,g,peak,a,dcy,dest,via)=>{g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(peak,t+a);g.gain.exponentialRampToValueAtTime(.0001,t+a+dcy);(via||o).connect(g);g.connect(dest||this.mus);o.start(t);o.stop(t+a+dcy+.05)};
     if(st%4===0){const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.setValueAtTime(110,t);o.frequency.exponentialRampToValueAtTime(44,t+.16);env(o,g,.42,.004,.26)}
@@ -1758,6 +1793,46 @@ const AU={ctx:null,
     if(st%4===2||st%8===7){const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=mf(roots[bar]+24+chord[(i>>1)%3]);env(o,g,.05,.006,.35,this.echo)}
   }
 };
+/* ---------- Turn Up Radio: live stations from turnupmusic.online's lineup */
+const STATIONS=[
+ ['SomaFM Synphaera','Synthwave · Ambient','https://ice5.somafm.com/synphaera-128-mp3','https://ice2.somafm.com/synphaera-128-mp3'],
+ ['Nightwave Plaza','Vaporwave · Future Funk','https://radio.plaza.one/mp3',''],
+ ['Radio Nova','Paris · Hip-Hop · Soul · World','https://novazz.ice.infomaniak.ch/novazz-128.mp3',''],
+ ['FIP Hip-Hop','Hip-Hop · Rap','https://icecast.radiofrance.fr/fiphiphop-hifi.aac','https://icecast.radiofrance.fr/fiphiphop-midfi.mp3'],
+ ['SomaFM Fluid','Instrumental Hip-Hop · Future Soul','https://ice5.somafm.com/fluid-128-mp3','https://ice2.somafm.com/fluid-128-mp3'],
+ ['SomaFM Lush','R&B-tinged Vocals','https://ice5.somafm.com/lush-128-mp3','https://ice2.somafm.com/lush-128-mp3'],
+ ['SomaFM Seven Inch Soul','Vintage Soul · Funk 45s','https://ice5.somafm.com/7soul-128-mp3','https://ice2.somafm.com/7soul-128-mp3'],
+ ['Dance Wave!','Dance · House','https://dancewave.online/dance.mp3','https://dancewave.online/dance.ogg'],
+ ['SomaFM Beat Blender','Deep House · Chill','https://ice5.somafm.com/beatblender-128-mp3',''],
+ ['SomaFM The Trip','Progressive House · Trance','https://ice5.somafm.com/thetrip-128-mp3','https://ice2.somafm.com/thetrip-128-mp3'],
+ ['Rinse FM','London · UK Garage · Grime','https://admin.stream.rinse.fm/proxy/rinse_uk/stream',''],
+ ['Radio Paradise Rock','Rock','https://stream.radioparadise.com/rock-192',''],
+ ['SomaFM Underground 80s','80s New Wave · Synth-Pop','https://ice5.somafm.com/u80s-128-mp3','https://ice2.somafm.com/u80s-128-mp3'],
+ ['SomaFM Left Coast 70s','Yacht Rock · 70s Mellow Rock','https://ice5.somafm.com/seventies-128-mp3','https://ice2.somafm.com/seventies-128-mp3'],
+ ['SomaFM Boot Liquor','Americana · Roots Country','https://ice5.somafm.com/bootliquor-128-mp3','https://ice2.somafm.com/bootliquor-128-mp3'],
+ ['WWOZ 90.7 New Orleans','Jazz · Blues · Zydeco · Brass','https://wwoz-sc.streamguys1.com/wwoz-hi.mp3','https://wwoz-sc.streamguys1.com/wwoz-lo.mp3'],
+ ['SomaFM Heavyweight Reggae','Reggae · Dub · Rocksteady','https://ice5.somafm.com/reggae-128-mp3','https://ice2.somafm.com/reggae-128-mp3'],
+ ['Radio Swiss Pop','Pop','https://stream.srg-ssr.ch/m/rsp/mp3_128','https://stream.srg-ssr.ch/m/rsp/aacp_96'],
+ ['SomaFM Groove Salad','Ambient · Downtempo','https://ice5.somafm.com/groovesalad-128-mp3','https://ice6.somafm.com/groovesalad-128-mp3'],
+ ['SomaFM Metal Detector','Metal · Heavy Metal','https://ice5.somafm.com/metal-128-mp3','https://ice2.somafm.com/metal-128-mp3'],
+ ['NPR News','News · Talk','https://npr-ice.streamguys1.com/live.mp3','']];
+const RADIO={el:null,alt:false,ok:false,
+  cur(){return STATIONS[((save.radio%STATIONS.length)+STATIONS.length)%STATIONS.length]},
+  ensure(){if(this.el)return;const a=this.el=new Audio();a.preload='none';a.volume=.75;
+    a.addEventListener('playing',()=>{this.ok=true});
+    a.addEventListener('error',()=>{if(save.musicSrc!=='radio')return;const st=this.cur();
+      if(!this.alt&&st[3]){this.alt=true;a.src=st[3];a.play().catch(()=>{});return}
+      toast('Couldn’t reach '+st[0]+'. Try another station. (Radio plays on your own site; the Claude viewer blocks outside audio.)',7000)})},
+  play(){if(save.musicSrc!=='radio'||!save.sound){this.stop();return}this.ensure();const st=this.cur();this.alt=false;this.ok=false;
+    if(this.el.dataset.u!==st[2]){this.el.src=st[2];this.el.dataset.u=st[2]}
+    const p=this.el.play();if(p&&p.catch)p.catch(e=>{if(e&&e.name==='NotAllowedError')toast('Tap anywhere to start the radio.',4000)})},
+  stop(){if(this.el){this.el.pause();this.el.removeAttribute('src');this.el.dataset.u='';try{this.el.load()}catch(_){}}},
+  step(d){save.radio=(save.radio+d+STATIONS.length)%STATIONS.length;persist();refreshRadioUI();if(save.musicSrc!=='radio'){save.musicSrc='radio';refreshMusicUI()}this.play();
+    const st=this.cur();toast('📻 '+st[0]+' · '+st[1],2600);vrMsg='📻 '+st[0];vrMsgT=2.5}};
+function refreshRadioUI(){const st=RADIO.cur();$('radioName').textContent=st[0];$('radioTag').textContent=st[1]}
+function refreshMusicUI(){const m=save.musicSrc;$('musicBtn').textContent='♫ MUSIC · '+(m==='radio'?'TURN UP RADIO':m==='game'?'GAME':'OFF');$('radioField').hidden=m!=='radio';
+  if(AU.ctx)AU.setMusic(m==='game');if(m==='radio')RADIO.play();else RADIO.stop()}
+addEventListener('pointerdown',()=>{if(save.musicSrc==='radio'&&RADIO.el&&RADIO.el.paused&&RADIO.el.dataset.u&&save.sound)RADIO.el.play().catch(()=>{})},{capture:true});
 addEventListener('pointerdown',()=>AU.init(),{capture:true});addEventListener('keydown',()=>AU.init(),{capture:true});
 
 /* =========================================================
@@ -1968,7 +2043,7 @@ addEventListener('keydown',e=>{
   if(['arrowleft','arrowright','arrowup','arrowdown',' '].includes(k)&&(state==='play'||state==='countdown'))e.preventDefault();
   if(e.repeat)return;keys[k]=1;
   if(state==='play'||state==='countdown'){
-    if(k==='f')toggleFS();else if(k==='c')cycleCam();else if(k==='p')toggleAP();else if(k==='t')cycleWx();else if(k==='escape')pauseGame();
+    if(k==='r')RADIO.step(e.shiftKey?-1:1);else if(k==='f')toggleFS();else if(k==='c')cycleCam();else if(k==='p')toggleAP();else if(k==='t')cycleWx();else if(k==='escape')pauseGame();
   }else if(state==='pause'&&k==='escape')resumeGame();
   else if(k==='f'&&(state==='title'||state==='garage'||state==='end'||state==='pause'))toggleFS();
   else if(state==='title'&&k==='enter'&&document.activeElement===document.body)startRun();
@@ -1994,12 +2069,16 @@ function readInput(){
       if(Math.abs(ax)>.12&&Math.abs(ax)>Math.abs(steer))steer=ax;
       if(hand==='left')brake=Math.max(brake,trig);else gas=Math.max(gas,trig);
       if(grip>.5)boost=true;
-      const a=gp.buttons[4]&&gp.buttons[4].pressed,b=gp.buttons[5]&&gp.buttons[5].pressed,key=hand;
-      const pa=XRB.prev[key+'a'],pb=XRB.prev[key+'b'];
-      if(a&&!pa){if(state==='end')startRun();else if(hand==='right')toggleAP();else cycleWx()}
+      const a=gp.buttons[4]&&gp.buttons[4].pressed,b=gp.buttons[5]&&gp.buttons[5].pressed,st=gp.buttons[3]&&gp.buttons[3].pressed,key=hand;
+      const pa=XRB.prev[key+'a'],pb=XRB.prev[key+'b'],ps=XRB.prev[key+'s'];
+      if(hand==='right'){if(a&&!pa){if(state==='end')startRun();else toggleAP()}if(b&&!pb)vrRecenter();
+        const ay=gp.axes.length>=4?gp.axes[3]:0,axr=gp.axes.length>=4?gp.axes[2]:0;if(Math.abs(ay)>.75&&Math.abs(axr)<.35){save.vr.seat=clamp(save.vr.seat-ay*.004,-.4,.4);XRB.seatDirty=true}}
+      else{if(a&&!pa)RADIO.step(1);if(b&&!pb){const i2=(VR_VIEWS.indexOf(VR.view)+1)%VR_VIEWS.length;vrSetView(VR_VIEWS[i2])}}
+      if(st&&!ps)vrRecenter();XRB.prev[key+'s']=st;
       XRB.prev[key+'a']=a;XRB.prev[key+'b']=b;
     }
   }
+  if(XRB.seatDirty&&!session){XRB.seatDirty=false;persist();renderVRSet()}
   if(isTouch&&save.autoGas&&!session&&!brake)gas=1;
   inp.steer=clamp(steer,-1,1);inp.gas=gas;inp.brake=brake;inp.boost=boost;
 }
@@ -2147,17 +2226,20 @@ function updateHUD(){
 }
 let vrHudT=0;
 function drawVRHud(){
-  const g=vctx;g.clearRect(0,0,520,200);g.fillStyle='rgba(6,10,28,.82)';rrect(g,4,4,512,192,18);g.fill();
-  g.fillStyle='#ffb22e';g.font='italic 800 92px "Barlow Condensed",sans-serif';g.textAlign='left';g.fillText(String(Math.round(P.v*2.23694)).padStart(3,'0'),22,104);
-  g.fillStyle='#a2abcf';g.font='700 22px "Barlow Condensed",sans-serif';g.fillText('MPH',176,104);
-  g.fillStyle='rgba(255,255,255,.15)';g.fillRect(22,122,200,10);g.fillStyle='#ff7a3a';g.fillRect(22,122,200*P.boost/ST.boostCap,10);
-  g.textAlign='right';g.fillStyle='#eef1ff';g.font='800 46px "Barlow Condensed",sans-serif';
-  if(mode==='race'||(mode==='event'&&run.ev&&run.ev.rivals)){g.fillText(ordinal(place())+' / '+fieldSize(),496,62);g.font='700 34px "Barlow Condensed",sans-serif';g.fillStyle=run.timeLeft<10?'#ff6b7d':'#eef1ff';g.fillText(fmtTime(run.timeLeft),496,104)}
-  else{g.fillText('CRUISE',496,62);g.font='700 34px "Barlow Condensed",sans-serif';g.fillText(fmtTime(run.elapsed),496,104)}
-  g.fillStyle='#48d597';g.font='700 24px "Barlow Condensed",sans-serif';g.fillText(C[dispCourse()].name,496,140);
-  g.textAlign='center';g.fillStyle='#ffe08a';g.font='800 30px "Barlow Condensed",sans-serif';
+  const g=vctx,W2=640,H2=260;g.clearRect(0,0,W2,H2);g.fillStyle='rgba(6,10,28,.88)';rrect(g,4,4,W2-8,H2-8,22);g.fill();g.strokeStyle='rgba(255,178,46,.55)';g.lineWidth=3;rrect(g,4,4,W2-8,H2-8,22);g.stroke();
+  g.fillStyle='#ffb22e';g.font='italic 800 118px "Barlow Condensed",sans-serif';g.textAlign='left';g.fillText(String(Math.round(P.v*2.23694)).padStart(3,'0'),26,124);
+  g.fillStyle='#c9d0ee';g.font='700 28px "Barlow Condensed",sans-serif';g.fillText('MPH',222,124);
+  g.fillStyle='rgba(255,255,255,.18)';g.fillRect(26,144,250,14);g.fillStyle='#ff7a3a';g.fillRect(26,144,250*P.boost/ST.boostCap,14);
+  g.textAlign='right';g.fillStyle='#ffffff';g.font='800 60px "Barlow Condensed",sans-serif';
+  const rivals=mode==='race'||(mode==='event'&&run.ev&&run.ev.rivals);
+  if(rivals)g.fillText(ordinal(place())+' / '+fieldSize(),612,76);else g.fillText(mode==='event'?EV_TYPES[run.ev.type]:'CRUISE',612,76);
+  g.font='700 42px "Barlow Condensed",sans-serif';const tl=mode==='race'||(mode==='event'&&run.timeLeft>0&&run.ev&&run.ev.type!=='sprint'&&run.ev.type!=='duel');
+  g.fillStyle=tl&&run.timeLeft<10?'#ff6b7d':'#ffffff';g.fillText(fmtTime(tl?run.timeLeft:run.elapsed),612,124);
+  g.fillStyle='#48d597';g.font='700 30px "Barlow Condensed",sans-serif';g.fillText(C[dispCourse()].name,612,162);
+  g.textAlign='center';g.fillStyle='#ffe08a';g.font='800 36px "Barlow Condensed",sans-serif';
   let msg=state==='countdown'?(run.cdT>0?String(Math.ceil(run.cdT)):'GO'):state==='end'?run.result+' · PRESS A TO RACE AGAIN':(vrMsgT>0?vrMsg:(autopilot?'AUTOPILOT ON':''));
-  g.fillText(msg,260,180,480);vrTex.needsUpdate=true;
+  if(!msg&&save.musicSrc==='radio'){g.fillStyle='#9fb4ff';g.font='700 26px "Barlow Condensed",sans-serif';msg='📻 '+RADIO.cur()[0]}
+  g.fillText(msg,W2/2,222,W2-40);vrTex.needsUpdate=true;
 }
 function banner(b1,b2,b3,ms=3200){const el=$('banner');el.innerHTML='<div class="b1"></div><div class="b2"></div><div class="b3"></div>';el.children[0].textContent=b1;el.children[1].textContent=b2;el.children[2].textContent=b3||'';el.children[2].hidden=!b3;el.hidden=false;el.style.animation='none';void el.offsetWidth;el.style.animation='';clearTimeout(banner._t);banner._t=setTimeout(()=>{el.hidden=true},ms);vrMsg=b2+(b3?' · '+b3:'');vrMsgT=ms/1000}
 
@@ -2184,7 +2266,7 @@ function addXP(n){if(n<=0)return;const before=lvlInfo().L;save.xp=(save.xp||0)+n
   refreshLevel()}
 function refreshLevel(){const i=lvlInfo();$('lvlNum').textContent='LV '+i.L;$('xpFill').style.transform='scaleX('+(i.max?1:i.into/i.need).toFixed(3)+')';$('xpText').textContent=i.max?'MAX LEVEL':fmtInt(i.into)+' / '+fmtInt(i.need)+' XP';$('gLvl').textContent='DRIVER LV '+i.L}
 function startRun(){
-  rearmBlack();
+  rearmBlack();if(renderer.xr.isPresenting)VR.recenterAt=performance.now()+3400;
   if(!ready){toast('Still building the road. One moment.');return}
   if(!save.owned.includes(save.car)){toast('Buy this ride in the garage first, or pick one you own.');return}
   setupRun();state='countdown';run.cdT=3;showScreen(null);$('hud').hidden=false;autopilot=false;syncToggles();
@@ -2296,10 +2378,11 @@ function refreshRide(){const owned=save.owned.includes(save.car);$('rideName').t
 function selectCar(i){save.car=(i+CARS.length)%CARS.length;persist();rebuildPlayer();refreshRide();if(state==='title')placeAt(P.s,P.x),P.v=40}
 $('rideL').onclick=()=>selectCar(save.car-1);$('rideR').onclick=()=>selectCar(save.car+1);
 $('startBtn').onclick=startRun;
-$('soundBtn').onclick=()=>{save.sound=!save.sound;persist();AU.init();AU.setOn(save.sound);$('soundBtn').textContent=save.sound?'♪ SOUND ON':'♪ SOUND OFF'};
+$('soundBtn').onclick=()=>{save.sound=!save.sound;persist();AU.init();AU.setOn(save.sound);if(save.sound)RADIO.play();else RADIO.stop();$('soundBtn').textContent=save.sound?'♪ SOUND ON':'♪ SOUND OFF'};
 $('soundBtn').textContent=save.sound?'♪ SOUND ON':'♪ SOUND OFF';
-$('musicBtn').textContent=save.music===false?'♫ MUSIC OFF':'♫ MUSIC ON';
-$('musicBtn').onclick=()=>{save.music=save.music===false;persist();AU.init();AU.setMusic(save.music!==false);$('musicBtn').textContent=save.music===false?'♫ MUSIC OFF':'♫ MUSIC ON'};
+$('musicBtn').onclick=()=>{AU.init();const o=['game','radio','off'];save.musicSrc=o[(o.indexOf(save.musicSrc)+1)%3];persist();refreshMusicUI();if(save.musicSrc==='radio'){const st=RADIO.cur();toast('📻 Turn Up Radio: '+st[0]+'. Use ‹ › or the R key to change stations.',4500)}};
+$('radioL').onclick=()=>RADIO.step(-1);$('radioR').onclick=()=>RADIO.step(1);$('pRadio').onclick=()=>RADIO.step(1);
+refreshRadioUI();refreshMusicUI();renderVRSet();$('seatDn').onclick=()=>seatStep(-.05);$('seatUp').onclick=()=>seatStep(.05);
 function gfxLabel(){$('gfxBtn').textContent='▣ GRAPHICS '+(save.gfx==='auto'?'AUTO · ':'')+gfxTier.toUpperCase()}
 function setTier(t){gfxTier=t;gfxLow=t==='low';gfxUltra=t==='ultra'}
 function applyGfx(){
@@ -2365,10 +2448,10 @@ $('vrBtn').onclick=()=>{
   if(!navigator.xr||!xrSupported){toast('No VR headset is available to this page. On a Meta Quest, open the game in Meta Quest Browser and press ENTER VR. Some embedded viewers block WebXR; hosting the page on its own site avoids that.',7000);return}
   navigator.xr.requestSession('immersive-vr',{optionalFeatures:['local-floor']}).then(session=>{
     renderer.xr.setReferenceSpaceType('local');return renderer.xr.setSession(session).then(()=>{
-      rig.add(camera);camera.position.set(0,0,0);camera.rotation.set(0,0,0);
+      xrOff.add(camera);camera.position.set(0,0,0);camera.rotation.set(0,0,0);VR.recenterAt=performance.now()+700;
       if(renderer.xr.setFoveation)renderer.xr.setFoveation(1);
       startRun();
-      session.addEventListener('end',()=>{scene.add(camera);player.cockpit.visible=false;player.body.visible=true;resize();camSnap=true;if(state==='play'||state==='countdown')pauseGame()});
+      session.addEventListener('end',()=>{if(XRB.seatDirty){XRB.seatDirty=false;persist();renderVRSet()}vrHud.visible=false;vig.visible=false;scene.add(camera);player.cockpit.visible=false;player.body.visible=true;resize();camSnap=true;if(state==='play'||state==='countdown')pauseGame()});
     });
   }).catch(err=>toast('The headset could not start VR here: '+(err&&err.message?err.message:'unknown error')+'.',6000));
 };
@@ -2546,8 +2629,17 @@ function frameMain(t){
   sunLight.position.set(gp.x+sunDir.x*200,gp.y+Math.max(sunDir.y,.18)*200,gp.z+sunDir.z*200);sunLight.target.position.copy(gp);
   // camera
   if(xr){
-    player.cockpit.visible=true;player.driver.visible=false;
-    _w.copy(player.eye);player.group.localToWorld(_w);rig.position.copy(_w);_yq.setFromAxisAngle(_up,player.group.rotation.y);rig.quaternion.copy(_yq);
+    const v=VR.view,e=player.eye,D=CAR_DEFS[player.type];
+    player.cockpit.visible=v==='cockpit';player.driver.visible=v==='chase';
+    if(v==='cockpit')_w.set(e.x,e.y+save.vr.seat,e.z);else if(v==='hood')_w.set(0,e.y+.28+save.vr.seat,-(D.L*.5-.6));else _w.set(0,2.5+save.vr.seat,6.8);
+    player.group.localToWorld(_w);
+    let d=player.group.rotation.y-VR.yaw;while(d>Math.PI)d-=Math.PI*2;while(d<-Math.PI)d+=Math.PI*2;VR.yaw+=v==='chase'?d*Math.min(1,dt*4):d;
+    if(v==='chase'){_vrV.set(Math.sin(VR.yaw)*6.8,0,Math.cos(VR.yaw)*6.8);_w.copy(player.group.position).add(_vrV);_w.y=player.group.position.y+2.5+save.vr.seat}
+    rig.position.copy(_w);_yq.setFromAxisAngle(_up,VR.yaw);rig.quaternion.copy(_yq);
+    if(VR.recenterAt&&performance.now()>VR.recenterAt){VR.recenterAt=0;vrRecenter()}
+    vrHud.visible=true;vrHud.position.set(0,v==='chase'?-.55:-.3,v==='chase'?-1.5:-.85);vrHud.rotation.x=-.28;vrHud.scale.setScalar(v==='chase'?1.5:1);
+    const turn=Math.min(1,Math.abs(P.lv)/9+Math.abs(d)*6),k=save.vr.vignette&&state==='play'?Math.min(.85,turn*.9+(P.boosting?.25:0))*smooth(5,25,P.v):0;
+    vigMat.uniforms.k.value=lerp(vigMat.uniforms.k.value,k,Math.min(1,dt*6));vig.visible=vigMat.uniforms.k.value>.02;
   }else updateCamera(dt);
   const cw=xr?rig.position:camera.position;sky.position.copy(cw);auroraU.time.value=t*.001;skyU.time.value=t*.001;windU.value=t*.001*(1+wetness*.8);
   if(water.visible){waterNormal.offset.set(water.position.x/34+t*.000012,-water.position.z/34+t*.000007)}
@@ -2644,6 +2736,3 @@ const fontsReady=document.fonts&&document.fonts.load?Promise.all([document.fonts
 Promise.race([fontsReady,new Promise(r=>setTimeout(r,1500))]).catch(()=>{}).then(()=>boot()).catch(e=>{console.error(e);const st=$('loading');st.hidden=false;st.textContent='SOMETHING WENT WRONG BUILDING THE ROAD: '+e.message+'. RELOAD THE PAGE, OR SET GRAPHICS TO LOW.'});
 })();
 </script>
-
-</body>
-</html>
