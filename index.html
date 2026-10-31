@@ -112,6 +112,7 @@ h1 em{font-style:normal;color:var(--amber)}
 .pop.show{animation:popup .9s ease-out forwards}
 @keyframes popup{0%{opacity:0;transform:translate(-50%,14px) scale(.9)}15%{opacity:1;transform:translate(-50%,0) scale(1.06)}70%{opacity:1}100%{opacity:0;transform:translate(-50%,-24px)}}
 body.is-touch .fxchips{top:64px}body.is-touch .fxchips span{font-size:10px;padding:3px 8px}body.is-touch .pop{font-size:20px;top:52%}
+.radio-st{font:600 12px Barlow,sans-serif;letter-spacing:.06em;color:var(--muted,#9aa3c7);min-height:15px;margin-top:2px}.radio-st[data-s=live]{color:#48d597}.radio-st[data-s=fail]{color:#ff8a8a}.radio-st[data-s=tap]{color:var(--amber)}#radioOpen{margin-top:8px;width:100%}
 .tum{color:var(--amber);text-decoration:none;letter-spacing:.04em;text-transform:none}.tum:hover{text-decoration:underline}
 .vrset{border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:rgba(255,255,255,.03)}
 .vrset summary{cursor:pointer;list-style:none}.vrset summary::before{content:'▸ ';}.vrset[open] summary::before{content:'▾ ';}
@@ -349,8 +350,9 @@ body.is-touch .banner .b3{font-size:11px;margin-top:3px}
       <div class="field" id="radioField" hidden>
         <span class="label">Turn Up Radio · <a href="https://turnupmusic.online" target="_blank" rel="noopener" class="tum">turnupmusic.online</a></span>
         <div class="ride-card"><button class="arrow" id="radioL" aria-label="Previous station">‹</button>
-          <div class="ride-info"><div class="ride-name" id="radioName">Station</div><div class="ride-stats" id="radioTag">Genre</div></div>
+          <div class="ride-info"><div class="ride-name" id="radioName">Station</div><div class="ride-stats" id="radioTag">Genre</div><div class="radio-st" id="radioStatus"></div></div>
           <button class="arrow" id="radioR" aria-label="Next station">›</button></div>
+        <button class="btn" id="radioOpen" hidden>▶ PLAY IN NEW TAB</button>
       </div>
       <details class="vrset" id="vrSet"><summary class="label">VR options</summary>
         <div class="vrgrid">
@@ -1794,45 +1796,69 @@ const AU={ctx:null,
   }
 };
 /* ---------- Turn Up Radio: live stations from turnupmusic.online's lineup */
+const SOMA=n=>['https://ice5.somafm.com/'+n+'-128-mp3','https://ice6.somafm.com/'+n+'-128-mp3','https://ice2.somafm.com/'+n+'-128-mp3'];
+const FIP=n=>['https://icecast.radiofrance.fr/'+n+'-midfi.mp3','https://icecast.radiofrance.fr/'+n+'-hifi.aac','https://icecast.radiofrance.fr/'+n+'-lofi.mp3'];
 const STATIONS=[
- ['SomaFM Synphaera','Synthwave · Ambient','https://ice5.somafm.com/synphaera-128-mp3','https://ice2.somafm.com/synphaera-128-mp3'],
- ['Nightwave Plaza','Vaporwave · Future Funk','https://radio.plaza.one/mp3',''],
- ['Radio Nova','Paris · Hip-Hop · Soul · World','https://novazz.ice.infomaniak.ch/novazz-128.mp3',''],
- ['FIP Hip-Hop','Hip-Hop · Rap','https://icecast.radiofrance.fr/fiphiphop-hifi.aac','https://icecast.radiofrance.fr/fiphiphop-midfi.mp3'],
- ['SomaFM Fluid','Instrumental Hip-Hop · Future Soul','https://ice5.somafm.com/fluid-128-mp3','https://ice2.somafm.com/fluid-128-mp3'],
- ['SomaFM Lush','R&B-tinged Vocals','https://ice5.somafm.com/lush-128-mp3','https://ice2.somafm.com/lush-128-mp3'],
- ['SomaFM Seven Inch Soul','Vintage Soul · Funk 45s','https://ice5.somafm.com/7soul-128-mp3','https://ice2.somafm.com/7soul-128-mp3'],
- ['Dance Wave!','Dance · House','https://dancewave.online/dance.mp3','https://dancewave.online/dance.ogg'],
- ['SomaFM Beat Blender','Deep House · Chill','https://ice5.somafm.com/beatblender-128-mp3',''],
- ['SomaFM The Trip','Progressive House · Trance','https://ice5.somafm.com/thetrip-128-mp3','https://ice2.somafm.com/thetrip-128-mp3'],
- ['Rinse FM','London · UK Garage · Grime','https://admin.stream.rinse.fm/proxy/rinse_uk/stream',''],
- ['Radio Paradise Rock','Rock','https://stream.radioparadise.com/rock-192',''],
- ['SomaFM Underground 80s','80s New Wave · Synth-Pop','https://ice5.somafm.com/u80s-128-mp3','https://ice2.somafm.com/u80s-128-mp3'],
- ['SomaFM Left Coast 70s','Yacht Rock · 70s Mellow Rock','https://ice5.somafm.com/seventies-128-mp3','https://ice2.somafm.com/seventies-128-mp3'],
- ['SomaFM Boot Liquor','Americana · Roots Country','https://ice5.somafm.com/bootliquor-128-mp3','https://ice2.somafm.com/bootliquor-128-mp3'],
- ['WWOZ 90.7 New Orleans','Jazz · Blues · Zydeco · Brass','https://wwoz-sc.streamguys1.com/wwoz-hi.mp3','https://wwoz-sc.streamguys1.com/wwoz-lo.mp3'],
- ['SomaFM Heavyweight Reggae','Reggae · Dub · Rocksteady','https://ice5.somafm.com/reggae-128-mp3','https://ice2.somafm.com/reggae-128-mp3'],
- ['Radio Swiss Pop','Pop','https://stream.srg-ssr.ch/m/rsp/mp3_128','https://stream.srg-ssr.ch/m/rsp/aacp_96'],
- ['SomaFM Groove Salad','Ambient · Downtempo','https://ice5.somafm.com/groovesalad-128-mp3','https://ice6.somafm.com/groovesalad-128-mp3'],
- ['SomaFM Metal Detector','Metal · Heavy Metal','https://ice5.somafm.com/metal-128-mp3','https://ice2.somafm.com/metal-128-mp3'],
- ['NPR News','News · Talk','https://npr-ice.streamguys1.com/live.mp3','']];
-const RADIO={el:null,alt:false,ok:false,
+ ['SomaFM Synphaera','Synthwave · Ambient',SOMA('synphaera')],
+ ['Nightwave Plaza','Vaporwave · Future Funk',['https://radio.plaza.one/mp3','https://radio.plaza.one/ogg']],
+ ['FIP Hip-Hop','Hip-Hop · Rap',FIP('fiphiphop')],
+ ['FIP Groove','Funk · Soul · Hip-Hop',FIP('fipgroove')],
+ ['Radio Nova','Paris · Hip-Hop · Soul · World',['https://novazz.ice.infomaniak.ch/novazz-128.mp3']],
+ ['SomaFM Fluid','Instrumental Hip-Hop · Future Soul',SOMA('fluid')],
+ ['SomaFM Lush','R&B-tinged Vocals',SOMA('lush')],
+ ['SomaFM Seven Inch Soul','Vintage Soul · Funk 45s',SOMA('7soul')],
+ ['Dance Wave!','Dance · House',['https://dancewave.online/dance.mp3','https://dancewave.online/dance.ogg']],
+ ['SomaFM Beat Blender','Deep House · Chill',SOMA('beatblender')],
+ ['SomaFM The Trip','Progressive House · Trance',SOMA('thetrip')],
+ ['FIP Electro','Electronic',FIP('fipelectro')],
+ ['SomaFM PopTron','Electropop · Indie Dance',SOMA('poptron')],
+ ['SomaFM Dub Step Beyond','Dubstep · Bass',SOMA('dubstep')],
+ ['Rinse FM','London · UK Garage · Grime',['https://admin.stream.rinse.fm/proxy/rinse_uk/stream']],
+ ['KEXP 90.3','Seattle · Indie · Hip-Hop',['https://kexp-mp3-128.streamguys1.com/kexp128.mp3','https://kexp.streamguys1.com/kexp160.aac']],
+ ['Radio Paradise','Eclectic · Rock · World',['https://stream.radioparadise.com/mp3-192','https://stream.radioparadise.com/mp3-128','https://stream.radioparadise.com/aac-128']],
+ ['Radio Paradise Rock','Rock',['https://stream.radioparadise.com/rock-192','https://stream.radioparadise.com/rock-128']],
+ ['SomaFM Underground 80s','80s New Wave · Synth-Pop',SOMA('u80s')],
+ ['SomaFM Left Coast 70s','Yacht Rock · 70s Mellow Rock',SOMA('seventies')],
+ ['SomaFM Boot Liquor','Americana · Roots Country',SOMA('bootliquor')],
+ ['WWOZ 90.7 New Orleans','Jazz · Blues · Zydeco · Brass',['https://wwoz-sc.streamguys1.com/wwoz-hi.mp3','https://wwoz-sc.streamguys1.com/wwoz-lo.mp3']],
+ ['WBGO Jazz 88.3','Newark · Jazz',['https://wbgo.streamguys1.com/wbgo128','https://wbgo.streamguys1.com/wbgo96']],
+ ['SomaFM Secret Agent','Lounge · Spy Jazz',SOMA('secretagent')],
+ ['SomaFM Heavyweight Reggae','Reggae · Dub · Rocksteady',SOMA('reggae')],
+ ['Radio Swiss Pop','Pop',['https://stream.srg-ssr.ch/m/rsp/mp3_128','https://stream.srg-ssr.ch/m/rsp/aacp_96']],
+ ['KCRW Eclectic24','Los Angeles · Eclectic',['https://kcrw.streamguys1.com/kcrw_192k_mp3_e24','https://kcrw.streamguys1.com/kcrw_128k_mp3_e24']],
+ ['SomaFM Groove Salad','Ambient · Downtempo',SOMA('groovesalad')],
+ ['SomaFM Metal Detector','Metal · Heavy Metal',SOMA('metal')],
+ ['NPR News','News · Talk',['https://npr-ice.streamguys1.com/live.mp3']]];
+/* Same approach as the Turn Up Music app: start inside the tap, a fresh player per link,
+   move to the next backup link on error or after a timeout, and fall back to a new tab if this page blocks outside audio. */
+const RADIO={el:null,token:0,status:'idle',blocked:false,win:null,
   cur(){return STATIONS[((save.radio%STATIONS.length)+STATIONS.length)%STATIONS.length]},
-  ensure(){if(this.el)return;const a=this.el=new Audio();a.preload='none';a.volume=.75;
-    a.addEventListener('playing',()=>{this.ok=true});
-    a.addEventListener('error',()=>{if(save.musicSrc!=='radio')return;const st=this.cur();
-      if(!this.alt&&st[3]){this.alt=true;a.src=st[3];a.play().catch(()=>{});return}
-      toast('Couldn’t reach '+st[0]+'. Try another station. (Radio plays on your own site; the Claude viewer blocks outside audio.)',7000)})},
-  play(){if(save.musicSrc!=='radio'||!save.sound){this.stop();return}this.ensure();const st=this.cur();this.alt=false;this.ok=false;
-    if(this.el.dataset.u!==st[2]){this.el.src=st[2];this.el.dataset.u=st[2]}
-    const p=this.el.play();if(p&&p.catch)p.catch(e=>{if(e&&e.name==='NotAllowedError')toast('Tap anywhere to start the radio.',4000)})},
-  stop(){if(this.el){this.el.pause();this.el.removeAttribute('src');this.el.dataset.u='';try{this.el.load()}catch(_){}}},
-  step(d){save.radio=(save.radio+d+STATIONS.length)%STATIONS.length;persist();refreshRadioUI();if(save.musicSrc!=='radio'){save.musicSrc='radio';refreshMusicUI()}this.play();
-    const st=this.cur();toast('📻 '+st[0]+' · '+st[1],2600);vrMsg='📻 '+st[0];vrMsgT=2.5}};
+  setStatus(st,msg){this.status=st;const e=$('radioStatus');if(e){e.textContent=msg||'';e.dataset.s=st}$('radioOpen').hidden=st!=='fail'},
+  kill(){const a=this.el;this.el=null;if(!a)return;a.onplaying=a.onerror=a.onwaiting=null;try{a.pause();a.removeAttribute('src');a.load()}catch(_){}},
+  play(){this.kill();const tk=++this.token;if(save.musicSrc!=='radio'||!save.sound){this.setStatus('idle','');return}
+    const st=this.cur();this.setStatus('load','Connecting…');this.attempt(st,tk,st[2],0)},
+  attempt(st,tk,urls,i){if(tk!==this.token)return;
+    if(i>=urls.length||this.blocked){this.fail(st);return}
+    const a=new Audio();a.preload='auto';a.volume=.8;this.el=a;let done=false;
+    const next=()=>{if(done)return;done=true;clearTimeout(tm);a.onplaying=a.onerror=null;try{a.pause();a.removeAttribute('src');a.load()}catch(_){}if(tk===this.token)this.attempt(st,tk,urls,i+1)};
+    const tm=setTimeout(next,9000);a.onerror=next;
+    a.onplaying=()=>{if(tk!==this.token){a.pause();return}if(!done){done=true;clearTimeout(tm)}this.setStatus('live','● LIVE')};
+    a.onwaiting=()=>{if(this.el===a&&this.status==='live')this.setStatus('load','Buffering…')};
+    a.src=urls[i];const pr=a.play();
+    if(pr&&pr.catch)pr.catch(e=>{if(tk!==this.token||done)return;if(e&&e.name==='NotAllowedError'){done=true;clearTimeout(tm);this.setStatus('tap','Tap anywhere to start the radio')}})},
+  fail(st){this.setStatus('fail',this.blocked?'This page blocks outside audio. Play it in a new tab instead.':'Couldn’t connect to '+st[0]+'. Try another station or play it in a new tab.');
+    toast(this.blocked?'📻 This site blocks outside audio. Use “Play in new tab”.':'📻 '+st[0]+' isn’t reachable right now. Try another station.',5000);vrMsg='STATION OFFLINE · TRY X';vrMsgT=3},
+  resume(){if(this.status==='tap'&&this.el){this.el.play().then(()=>{}).catch(()=>this.play())}},
+  stop(){this.token++;this.kill();this.setStatus('idle','')},
+  openTab(){const st=this.cur();this.stop();try{this.win=window.open(st[2][0],'tum_radio')}catch(_){}
+    if(!this.win)window.open('https://turnupmusic.online/app/','_blank');toast('📻 '+st[0]+' is playing in another tab. Keep it open while you drive.',5000)},
+  step(d){save.radio=(save.radio+d+STATIONS.length)%STATIONS.length;persist();refreshRadioUI();if(save.musicSrc!=='radio'){save.musicSrc='radio';refreshMusicUI()}else this.play();
+    const st=this.cur();toast('📻 '+st[0]+' · '+st[1],2600);vrMsg='📻 '+st[0];vrMsgT=2.5;if(this.win&&!this.win.closed){try{this.win.location=st[2][0]}catch(_){}}}};
+addEventListener('securitypolicyviolation',e=>{if(/media/.test(e.effectiveDirective||e.violatedDirective||'')){RADIO.blocked=true}});
 function refreshRadioUI(){const st=RADIO.cur();$('radioName').textContent=st[0];$('radioTag').textContent=st[1]}
 function refreshMusicUI(){const m=save.musicSrc;$('musicBtn').textContent='♫ MUSIC · '+(m==='radio'?'TURN UP RADIO':m==='game'?'GAME':'OFF');$('radioField').hidden=m!=='radio';
   if(AU.ctx)AU.setMusic(m==='game');if(m==='radio')RADIO.play();else RADIO.stop()}
-addEventListener('pointerdown',()=>{if(save.musicSrc==='radio'&&RADIO.el&&RADIO.el.paused&&RADIO.el.dataset.u&&save.sound)RADIO.el.play().catch(()=>{})},{capture:true});
+addEventListener('pointerdown',()=>RADIO.resume(),{capture:true});
 addEventListener('pointerdown',()=>AU.init(),{capture:true});addEventListener('keydown',()=>AU.init(),{capture:true});
 
 /* =========================================================
@@ -2381,7 +2407,7 @@ $('startBtn').onclick=startRun;
 $('soundBtn').onclick=()=>{save.sound=!save.sound;persist();AU.init();AU.setOn(save.sound);if(save.sound)RADIO.play();else RADIO.stop();$('soundBtn').textContent=save.sound?'♪ SOUND ON':'♪ SOUND OFF'};
 $('soundBtn').textContent=save.sound?'♪ SOUND ON':'♪ SOUND OFF';
 $('musicBtn').onclick=()=>{AU.init();const o=['game','radio','off'];save.musicSrc=o[(o.indexOf(save.musicSrc)+1)%3];persist();refreshMusicUI();if(save.musicSrc==='radio'){const st=RADIO.cur();toast('📻 Turn Up Radio: '+st[0]+'. Use ‹ › or the R key to change stations.',4500)}};
-$('radioL').onclick=()=>RADIO.step(-1);$('radioR').onclick=()=>RADIO.step(1);$('pRadio').onclick=()=>RADIO.step(1);
+$('radioOpen').onclick=()=>RADIO.openTab();$('radioL').onclick=()=>RADIO.step(-1);$('radioR').onclick=()=>RADIO.step(1);$('pRadio').onclick=()=>RADIO.step(1);
 refreshRadioUI();refreshMusicUI();renderVRSet();$('seatDn').onclick=()=>seatStep(-.05);$('seatUp').onclick=()=>seatStep(.05);
 function gfxLabel(){$('gfxBtn').textContent='▣ GRAPHICS '+(save.gfx==='auto'?'AUTO · ':'')+gfxTier.toUpperCase()}
 function setTier(t){gfxTier=t;gfxLow=t==='low';gfxUltra=t==='ultra'}
