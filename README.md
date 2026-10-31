@@ -11,6 +11,7 @@ A browser racing game built with Three.js and WebXR. Race one continuous cross-c
 - Garage paint, liveries, race numbers, performance upgrades and race tools
 - Obstacles, pickups and boost pads on the road
 - WebXR cockpit mode for headsets such as Meta Quest
+- HD texture pack generated with Higgsfield (photo asphalt, grass, sand, rock and building facades), streamed from Higgsfield's CDN on HIGH and ULTRA
 - Graphics levels: LOW (phones and headsets), HIGH and ULTRA, with automatic step-down and in-place recovery if the graphics card runs out of memory
 
 ## Controls

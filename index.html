@@ -1139,7 +1139,9 @@ terrainMat.onBeforeCompile=sh=>{addFX(sh);sh.fragmentShader=sh.fragmentShader.re
   diffuseColor.rgb*=(dA.rgb*.6+.4)*(dB.rgb*.7+.45)*(dC.rgb*.5+.62)*1.03;
 #endif`)};
 const terrainMatHQ=new THREE.MeshStandardMaterial({vertexColors:true,map:terrainMat.map,bumpMap:terrainMat.map,bumpScale:.035,roughness:.96,metalness:0,envMapIntensity:.25});
-terrainMatHQ.onBeforeCompile=sh=>{terrainMat.onBeforeCompile(sh);
+const HDU={hdK:{value:0},tG:{value:null},tS:{value:null},tR:{value:null},avgG:{value:new THREE.Vector3(1,1,1)},avgS:{value:new THREE.Vector3(1,1,1)},avgR:{value:new THREE.Vector3(1,1,1)}};
+terrainMatHQ.onBeforeCompile=sh=>{terrainMat.onBeforeCompile(sh);Object.assign(sh.uniforms,HDU);
+  sh.fragmentShader='uniform float hdK;uniform sampler2D tG,tS,tR;uniform vec3 avgG,avgS,avgR;\n'+sh.fragmentShader;
   sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nfloat tH(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}\nfloat tN(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(tH(i),tH(i+vec2(1,0)),f.x),mix(tH(i+vec2(0,1)),tH(i+vec2(1,1)),f.x),f.y);}')
    .replace('#include <normal_fragment_maps>',`#include <normal_fragment_maps>
   {vec3 wP=(vec4(-vViewPosition,0.)*viewMatrix).xyz+cameraPosition;vec3 wN=normalize((vec4(normal,0.)*viewMatrix).xyz);
@@ -1148,6 +1150,15 @@ terrainMatHQ.onBeforeCompile=sh=>{terrainMat.onBeforeCompile(sh);
    diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*vec3(1.2,1.06,.76),smoothstep(.58,.8,n2)*.55);
    diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*vec3(.78,.86,.74),smoothstep(.6,.85,n1)*.45);
    float rk=smoothstep(.3,.52,1.-wN.y+(n3-.5)*.14);vec3 rock=vec3(.47,.44,.4)*(.72+.55*n3)*(.85+.3*n1);
+   if(hdK>.001){vec2 u1=wP.xz/5.5,u2=mat2(.8,-.6,.6,.8)*wP.xz/21.;
+     vec3 g=(texture2D(tG,u1).rgb*.6+texture2D(tG,u2).rgb*.4)/avgG,sd=(texture2D(tS,u1*1.1).rgb*.6+texture2D(tS,u2).rgb*.4)/avgS;
+     #ifdef USE_COLOR
+     float gw=smoothstep(-.01,.07,vColor.g-(vColor.r+vColor.b)*.5);float snw=smoothstep(.75,.9,min(vColor.r,min(vColor.g,vColor.b)));
+     #else
+     float gw=.5,snw=0.;
+     #endif
+     vec3 det=mix(sd,g,gw);diffuseColor.rgb*=mix(vec3(1.),clamp(det,.35,1.8),hdK*(1.-snw*.7));
+     vec3 tr=texture2D(tR,vec2(wP.x*.7+wP.z*.7,wP.y)/9.).rgb;rock=mix(rock,tr*(.82+.3*n1),hdK);}
    diffuseColor.rgb=mix(diffuseColor.rgb,rock,rk*.85);}`)};terrainMatHQ.customProgramCacheKey=()=>'terrHQ';
 const terrMat=()=>gfxLow?terrainMat:terrainMatHQ;
 function makeTerrain(){const g=new THREE.PlaneGeometry(TS,TS,TG,TG);g.rotateX(-Math.PI/2);g.setAttribute('color',new THREE.BufferAttribute(new Float32Array(g.attributes.position.count*3),3));const m=new THREE.Mesh(g,terrMat());m.frustumCulled=false;m.visible=false;m.receiveShadow=true;scene.add(m);return m}
@@ -2294,6 +2305,7 @@ function applyGfx(){
   {const n=shadowRes(),sc=sunLight.shadow.camera,e=gfxUltra?46:38;if(sunLight.shadow.mapSize.x!==n){sunLight.shadow.mapSize.set(n,n);if(sunLight.shadow.map){sunLight.shadow.map.dispose();sunLight.shadow.map=null}}sc.left=-e;sc.right=e;sc.top=e;sc.bottom=-e;sc.updateProjectionMatrix()}
   terr.forEach(m=>m.material=terrMat());
   REFL.on=gfxUltra&&POST.ok;reflApply();
+  if(ready&&!gfxLow)hdLoad();
   grassMeshes.forEach(m=>m.visible=!gfxLow);
   scene.traverse(o=>{if(o.material)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m.needsUpdate=true)});
   gfxLabel();
@@ -2570,6 +2582,41 @@ function warmShaders(){
   for(const [type,o] of tmp){o.visible=false;(ITEMS.pool[type]||(ITEMS.pool[type]=[])).push(o)}
   restore.forEach(o=>o.visible=false);
 }
+/* =========================================================
+   HD texture pack (Higgsfield-generated photo textures, loaded from Higgsfield's CDN; falls back silently if blocked)
+   ========================================================= */
+const HD={base:'https://d8j0ntlcm91z4.cloudfront.net/user_2xqdkXQxcL6UFHjJwLK5drKd1tT/',state:'idle',
+  files:{asphalt:'hf_20261030_232026_c7c80fd0-09bb-429f-9a86-d041ba62c0c6.png',grass:'hf_20261030_232026_3c97862a-c230-43f2-b139-96429d53cf38.png',
+    sand:'hf_20261030_232026_280af260-93c9-472c-b1b8-8aae9ff76ddb.png',rock:'hf_20261030_232102_f02cce8f-dce6-48f2-a182-0dff60c088c6.png',
+    glass:'hf_20261030_232026_05dbfe25-efcb-4ff9-aef2-03574ba0abfc.png',brick:'hf_20261030_232102_88bde7dd-0552-47ac-b3db-28467695482a.png',
+    deco:'hf_20261030_232026_efc795ba-9282-4a4f-a2d9-1d1e13ffa8e5.png'},img:{}};
+function hdImg(key){return new Promise((res,rej)=>{const im=new Image();im.crossOrigin='anonymous';const t=setTimeout(()=>rej(new Error('timeout')),20000);
+  im.onload=()=>{clearTimeout(t);res(im)};im.onerror=()=>{clearTimeout(t);rej(new Error('blocked'))};im.src=HD.base+HD.files[key]})}
+function hdTex(im,rx,ry){const t=new THREE.Texture(im);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(rx||1,ry||1);t.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());t.needsUpdate=true;return t}
+function hdAvg(im){const [c,g]=cvs(16,16);g.drawImage(im,0,0,16,16);const d=g.getImageData(0,0,16,16).data;let r=0,gg=0,b=0;for(let i=0;i<d.length;i+=4){r+=d[i];gg+=d[i+1];b+=d[i+2]}const n=d.length/4*255;return new THREE.Vector3(Math.max(.05,r/n),Math.max(.05,gg/n),Math.max(.05,b/n))}
+function hdRoad(im){ // photo asphalt overlaid on the painted road canvas: markings, cracks and tyre wear stay
+  const c=ROADMAPS.map.image,g=c.getContext('2d'),mx=c.width/((W+SH)*2),tile=3.6*mx,pat=g.createPattern(im,'repeat');
+  pat.setTransform&&pat.setTransform(new DOMMatrix().scale(tile/im.width));
+  g.save();g.globalCompositeOperation='soft-light';g.globalAlpha=.9;g.fillStyle=pat;g.fillRect(0,0,c.width,c.height);g.globalCompositeOperation='screen';g.globalAlpha=1;g.fillStyle='rgba(255,255,255,.05)';g.fillRect(0,0,c.width,c.height);g.restore();ROADMAPS.map.needsUpdate=true}
+function hdFacade(key,im,style){ // day map = photo; night lights = clean window blocks traced from a downscaled copy of the photo
+  const mat=BLD[key],R={tower:[1,3],block:[1.5,1.2],deco:[1,1]}[key],day=hdTex(im,R[0],R[1]);
+  const N=48,[sc,sg]=cvs(N,N);sg.drawImage(im,0,0,N,N);const sd=sg.getImageData(0,0,N,N).data,rnd=mulberry32(key.length*31),cell=[];
+  for(let k=0;k<64;k++)cell.push(rnd()<.5?.7+rnd()*.3:0);
+  const S=512,[c,g]=cvs(S,S);g.fillStyle='#000';g.fillRect(0,0,S,S);const px=S/N;
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++){const i=(y*N+x)*4,r=sd[i]/255,gg=sd[i+1]/255,b=sd[i+2]/255,l=.3*r+.59*gg+.11*b;
+    const w=style==='glass'?(l>.42?1:l>.3?.5:0):style==='brick'?((b>=r*.95&&l<.75)||l<.3?1:0):((gg>=r&&b>=r*.9&&l<.8)||l<.3?1:0);if(!w)continue;
+    const k=cell[(Math.floor(y/6)%8)*8+Math.floor(x/6)%8];if(!k)continue;const warm=(Math.floor(x/6)+Math.floor(y/6))%3!==0;
+    g.fillStyle=warm?`rgba(255,205,140,${w*k})`:`rgba(190,220,255,${w*k})`;g.fillRect(x*px,y*px,px+.5,px+.5)}
+  const night=hdTex(c,R[0],R[1]);night.minFilter=THREE.LinearMipmapLinearFilter;
+  const om=mat.map,oe=mat.emissiveMap;mat.map=day;mat.emissiveMap=night;mat.needsUpdate=true;if(om)om.dispose();if(oe)oe.dispose()}
+function hdLoad(){
+  if(HD.state!=='idle'||gfxLow)return;HD.state='loading';
+  const job=(key,fn)=>hdImg(key).then(im=>{HD.img[key]=im;try{fn(im)}catch(e){console.error(e)}return true}).catch(()=>false);
+  Promise.all([job('asphalt',hdRoad),
+    job('grass',im=>{HDU.tG.value=hdTex(im);HDU.avgG.value=hdAvg(im)}),job('sand',im=>{HDU.tS.value=hdTex(im);HDU.avgS.value=hdAvg(im)}),job('rock',im=>{HDU.tR.value=hdTex(im)}),
+    job('glass',im=>hdFacade('tower',im,'glass')),job('brick',im=>hdFacade('block',im,'brick')),job('deco',im=>hdFacade('deco',im,'deco'))])
+  .then(r=>{const ok=r.filter(Boolean).length;HD.state=ok?'on':'off';if(HDU.tG.value&&HDU.tS.value&&HDU.tR.value)HDU.hdK.value=1;
+    if(ok===r.length)toast('HD textures loaded: photo road, ground, rock and buildings.',4000)})}
 const nextFrame=()=>new Promise(r=>setTimeout(()=>requestAnimationFrame(()=>r()),0));
 async function boot(){
   const st=$('loading');
@@ -2585,7 +2632,7 @@ async function boot(){
   await step('SHAPING THE TERRAIN…',()=>{updateEnv(save.startCourse*L+30,1);placeAt(save.startCourse*L+30,0);P.v=40;P.apLane=1;refreshEnv()});
   await step('WARMING UP THE ENGINE…',()=>{poseCar(player,P.s,P.x,0,0,0,0);updateCamera(.016);renderer.compile(scene,camera)});
   await step('PREPARING EFFECTS…',()=>{applyGfx();warmShaders()});
-  st.hidden=true;ready=true;
+  st.hidden=true;ready=true;hdLoad();
   renderer.setAnimationLoop(frame);
 }
 const fontsReady=document.fonts&&document.fonts.load?Promise.all([document.fonts.load('800 64px "Barlow Condensed"'),document.fonts.load('700 32px "Barlow Condensed"'),document.fonts.load('600 32px "Barlow Condensed"')]):Promise.resolve();
