@@ -582,7 +582,7 @@ function ctxNotice(msg,showReload){const t=document.getElementById('toast');if(!
 renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();ctxLost=true;
   const next=gfxUltra?'high':'low';try{save.gfx=next;persist()}catch(_){}
   ctxNotice('Your graphics card ran out of memory. Restoring the game with '+next.toUpperCase()+' graphics…',false);
-  clearTimeout(ctxTimer);ctxTimer=setTimeout(()=>{if(ctxLost)ctxNotice('The graphics card did not come back on its own.',true)},5000)},false);
+  clearTimeout(ctxTimer);ctxTimer=setTimeout(()=>{if(!ctxLost)return;ctxNotice('The graphics card did not come back on its own.',true);if(LOWDEV){try{save.gfx='low';persist()}catch(_){}setTimeout(()=>{try{location.reload()}catch(_){}},1200)}},4000)},false);
 renderer.domElement.addEventListener('webglcontextrestored',()=>{ctxLost=false;clearTimeout(ctxTimer);
   try{setTier(tierFor(save.gfx));POST.reset();REFL.reset();if(sunLight.shadow.map){sunLight.shadow.map=null}applyGfx();envTex=null;refreshEnv();warmShaders();
     const t=document.getElementById('toast');t.textContent='Game restored with '+gfxTier.toUpperCase()+' graphics.';t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>{t.hidden=true},5000)}
@@ -1081,7 +1081,7 @@ function buildProps(){
         (buckets[kind]||(buckets[kind]=[])).push({m:m.clone(),c:K.bld?BLD_COLS[K.bld][(rnd()*BLD_COLS[K.bld].length)|0]:0});
         return;
       }};
-    const list=cd.props,tw=list.reduce((a,b)=>a+b[1],0),count=Math.round(330*cd.density);
+    const list=cd.props,tw=list.reduce((a,b)=>a+b[1],0),count=Math.round(330*cd.density*(gfxLow?.55:1));
     for(let n=0;n<count;n++){let r=rnd()*tw,kind=list[0][0];for(const [k,w] of list){if((r-=w)<=0){kind=k;break}}place(kind)}
     if(cd.grass)for(let n=0,gn=gfxLow?600:gfxUltra?2800:1600;n<gn;n++)place(cd.grass);
     for(const kind in buckets){
@@ -1374,7 +1374,7 @@ function profFn(pts){const a=pts.slice().sort((p,q)=>p[0]-q[0]);if(a.length<2)re
   return u=>{if(u<=S[0].x)return S[0].y;const z=S.length-1;if(u>=S[z].x)return S[z].y;let lo=0,hi=z;while(hi-lo>1){const m=(lo+hi)>>1;if(S[m].x<u)lo=m;else hi=m}const A=S[lo],B=S[hi];return A.y+(B.y-A.y)*(u-A.x)/Math.max(1e-6,B.x-A.x)}}
 function inPoly(P,x,y){let c=false;for(let i=0,j=P.length-1;i<P.length;j=i++){const a=P[i],b=P[j];if(((a[1]>y)!==(b[1]>y))&&(x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0]))c=!c}return c}
 function loftBody(o){
-  const N=gfxLow?48:78,M=gfxLow?22:34,rings=[];let R=0;
+  const N=gfxLow?34:78,M=gfxLow?15:34,rings=[];let R=0;
   for(let i=0;i<=N;i++){
     const q=-1+2*i/N,t=Math.sin(q*Math.PI/2),u=o.uc+t*o.hl,at=Math.abs(t),p=t>=0?o.pF:o.pR;
     const pf=Math.pow(Math.max(0,1-Math.pow(at,p)),1/p),hp=p*1.6,hf=Math.pow(Math.max(0,1-Math.pow(at,hp)),1/hp);
@@ -1508,7 +1508,7 @@ const tailLens=new THREE.MeshStandardMaterial({color:0x5a0008,emissive:0xff1028,
 const ledMat=new THREE.MeshBasicMaterial({color:0xf2fbff}),ledRed=new THREE.MeshBasicMaterial({color:0xff2a3a});
 const barrelMat=new THREE.MeshStandardMaterial({color:0x2a2c31,metalness:.8,roughness:.35,side:THREE.DoubleSide});allCarMats.push(barrelMat);
 const TIREGEO={};
-const UNIT_SPHERE=new THREE.SphereGeometry(1,24,14);
+const UNIT_SPHERE=gfxLow?new THREE.SphereGeometry(1,12,8):new THREE.SphereGeometry(1,24,14);
 function tireGeo(wr,tw){const k=wr+'|'+tw;if(TIREGEO[k])return TIREGEO[k];const hw=tw/2,ri=wr*.68,P=[[ri,-hw],[wr-.06,-hw],[wr-.022,-hw+.012],[wr-.004,-hw+.045],[wr,-hw+.08],[wr,hw-.08],[wr-.004,hw-.045],[wr-.022,hw-.012],[wr-.06,hw],[ri,hw]];
   const g=new THREE.LatheGeometry(P.map(q=>new THREE.Vector2(q[0],q[1])),gfxLow?20:32);g.rotateZ(Math.PI/2);return TIREGEO[k]=g}
 function buildCar(type,o,premium){
@@ -1623,7 +1623,9 @@ function buildCar(type,o,premium){
   flames.visible=false;g.add(flames);
   g.traverse(m=>{if(m.isMesh&&!m.material.transparent&&!NOSHADOW.has(m.material)&&m!==sh)m.castShadow=true});
   g.rotation.order='YXZ';
-  const car={group:g,body,paint,livR,livL,topMat,accentMat,rim:rimMat,wheels,fronts,glow,flames,driver,stripes:null,eye:new THREE.Vector3(...D.eye),wr:D.wr,len:D.L,type,far:false};
+  const GLOWM=new Set([TAILGLOW,HEADGLOW]);const hasGlow=o=>{let f=false;o.traverse(c=>{if(c.material&&GLOWM.has(c.material))f=true});return f};
+  const detail=body.children.filter(c=>!c.userData.keep&&!hasGlow(c)).concat([driver]);g.traverse(c=>{if(c.geometry&&c.geometry.type==='CircleGeometry'&&c.material===brakeMat)detail.push(c)});
+  const car={detail,lod:false,group:g,body,paint,livR,livL,topMat,accentMat,rim:rimMat,wheels,fronts,glow,flames,driver,stripes:null,eye:new THREE.Vector3(...D.eye),wr:D.wr,len:D.L,type,far:false};
   car.mats=allCarMats.slice(mat0);car.beams=g.userData.beams||[];
   if(!gfxLow){for(const b of car.beams||[])b.visible=true}
   setGlow(car,o.glow==null?2:o.glow);
@@ -2182,6 +2184,7 @@ function addXP(n){if(n<=0)return;const before=lvlInfo().L;save.xp=(save.xp||0)+n
   refreshLevel()}
 function refreshLevel(){const i=lvlInfo();$('lvlNum').textContent='LV '+i.L;$('xpFill').style.transform='scaleX('+(i.max?1:i.into/i.need).toFixed(3)+')';$('xpText').textContent=i.max?'MAX LEVEL':fmtInt(i.into)+' / '+fmtInt(i.need)+' XP';$('gLvl').textContent='DRIVER LV '+i.L}
 function startRun(){
+  rearmBlack();
   if(!ready){toast('Still building the road. One moment.');return}
   if(!save.owned.includes(save.car)){toast('Buy this ride in the garage first, or pick one you own.');return}
   setupRun();state='countdown';run.cdT=3;showScreen(null);$('hud').hidden=false;autopilot=false;syncToggles();
@@ -2304,7 +2307,7 @@ function applyGfx(){
   renderer.shadowMap.enabled=!gfxLow;sunLight.castShadow=!gfxLow;POST.on=!gfxLow&&!postAutoOff;
   {const n=shadowRes(),sc=sunLight.shadow.camera,e=gfxUltra?46:38;if(sunLight.shadow.mapSize.x!==n){sunLight.shadow.mapSize.set(n,n);if(sunLight.shadow.map){sunLight.shadow.map.dispose();sunLight.shadow.map=null}}sc.left=-e;sc.right=e;sc.top=e;sc.bottom=-e;sc.updateProjectionMatrix()}
   terr.forEach(m=>m.material=terrMat());
-  REFL.on=gfxUltra&&POST.ok;reflApply();
+  REFL.on=gfxUltra&&POST.ok;reflApply();if(typeof rearmBlack==='function')rearmBlack();
   if(ready&&!gfxLow)hdLoad();
   grassMeshes.forEach(m=>m.visible=!gfxLow);
   scene.traverse(o=>{if(o.material)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m.needsUpdate=true)});
@@ -2474,11 +2477,12 @@ let frameErrs=0,lastErrT=0;
 const SHOT=new Uint8Array(4),shaderErrs=[];let blackT=0,blackN=0;
 {const ce=console.error.bind(console);console.error=(...a)=>{try{const m=a.map(x=>x&&x.message?x.message:String(x)).join(' ');if(/WebGLProgram|shader|GL_|WebGL/i.test(m))shaderErrs.push(m.replace(/\s+/g,' ').slice(0,160))}catch(_){}ce(...a)}}
 function gpuName(){try{const gl=renderer.getContext(),ext=gl.getExtension('WEBGL_debug_renderer_info');return ext?gl.getParameter(ext.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER)}catch(_){return'unknown graphics'}}
+let blackChecks=0;const rearmBlack=()=>{blackChecks=0};
 function checkBlack(dt){
-  if(!ready||ctxLost||renderer.xr.isPresenting||document.hidden)return;blackT+=Math.min(dt,1);if(blackT<1)return;blackT=0;
+  if(!ready||ctxLost||renderer.xr.isPresenting||document.hidden||blackChecks>=12)return;blackT+=Math.min(dt,1);if(blackT<1)return;blackT=0;
   const gl=renderer.getContext(),w=gl.drawingBufferWidth,h=gl.drawingBufferHeight;let sum=0;
   for(const [x,y] of [[.5,.62],[.25,.8],[.75,.8],[.5,.92],[.3,.35],[.7,.35]]){gl.readPixels(Math.floor(x*w),Math.floor(y*h),1,1,gl.RGBA,gl.UNSIGNED_BYTE,SHOT);sum+=SHOT[0]+SHOT[1]+SHOT[2]}
-  if(sum<30){if(++blackN>=2){blackN=0;fixBlack()}}else blackN=0}
+  blackChecks++;if(sum<30){blackChecks=0;if(++blackN>=2){blackN=0;fixBlack()}}else blackN=0}
 function fixBlack(){
   const why=shaderErrs.length?' Error: '+shaderErrs[shaderErrs.length-1]:'';
   if(POST.on&&POST.ok){POST.ok=false;toast('The screen came up black, so screen effects were turned off.'+why,9000);return}
@@ -2520,7 +2524,7 @@ function frameMain(t){
   fallbackIdx=Math.round(P.s/STEP);
   // poses
   poseCar(player,P.s,P.x,P.slip,P.steer,P.v,dt);
-  for(const o of racers.concat(traffic)){if(!o.car.group.visible)continue;const far=Math.abs(o.s-P.s)>450;if(far!==o.car.far){o.car.far=far;o.car.group.traverse(m=>m.layers.set(far?1:0))}if(!far)poseCar(o.car,o.s,o.x,0,0,o.v,dt)}
+  for(const o of racers.concat(traffic)){if(!o.car.group.visible)continue;{const lod=Math.abs(o.s-P.s)>(gfxLow?45:75);if(lod!==o.car.lod){o.car.lod=lod;for(const d of o.car.detail)d.visible=!lod}}const far=Math.abs(o.s-P.s)>450;if(far!==o.car.far){o.car.far=far;o.car.group.traverse(m=>m.layers.set(far?1:0))}if(!far)poseCar(o.car,o.s,o.x,0,0,o.v,dt)}
   shieldBubble.visible=P.shieldT>0&&state!=='title';if(shieldBubble.visible){shieldBubble.position.copy(player.group.position);shieldBubble.position.y+=.55;shieldBubble.rotation.copy(player.group.rotation);const D=CAR_DEFS[player.type];shieldBubble.scale.set(D.W*.78,1.05,D.L*.62);shieldMat.uniforms.alpha.value=Math.min(1,P.shieldT)*(P.shieldT<2?(.6+.4*Math.sin(t*.03)):1)}
   player.flames.visible=P.boosting;if(P.boosting)player.flames.scale.setScalar(.8+Math.random()*.5);
   if(player.steerWheel)player.steerWheel.rotation.z=-P.steer*1.6;
@@ -2573,11 +2577,12 @@ function warmShaders(){
   const tmp=[],v=new THREE.Vector3();let k=0;
   for(const type of Object.keys(ITEM_DEF)){for(let c=0;c<2;c++){const o=itAcquire(type);roadPos(P.s+14+k*2,(k%3-1)*5,v);o.position.copy(v);tmp.push([type,o]);k++}}
   const rt=new THREE.WebGLRenderTarget(64,64);const xe=renderer.xr.enabled;renderer.xr.enabled=false;
+  const cnt=[];courseGroups.forEach(g=>g.traverse(o=>{if(o.isInstancedMesh){cnt.push([o,o.count]);o.count=Math.min(o.count,1)}}));
   try{renderer.compile(scene,camera);renderer.setRenderTarget(rt);renderer.render(scene,camera);
     if(REFL.on){reflInit();REFL.cam.position.copy(player.group.position);REFL.cam.position.y+=.9;REFL.cam.updateMatrixWorld(true);
       for(let f=0;f<6;f++){renderer.setRenderTarget(REFL.rt,f);renderer.render(scene,REFL.cam.children[f])}renderer.setRenderTarget(null);
       const env=pmrem.fromCubemap(REFL.rt.texture);if(REFL.env)REFL.env.dispose();REFL.env=env;reflApply();renderer.compile(scene,camera);renderer.setRenderTarget(rt);renderer.render(scene,camera)}}
-  finally{renderer.setRenderTarget(null);renderer.xr.enabled=xe;rt.dispose()}
+  finally{renderer.setRenderTarget(null);renderer.xr.enabled=xe;rt.dispose();cnt.forEach(([o,c])=>o.count=c)}
   if(POST.on&&POST.ok)try{POST.render(.016,0,0)}catch(e){console.error(e)}
   for(const [type,o] of tmp){o.visible=false;(ITEMS.pool[type]||(ITEMS.pool[type]=[])).push(o)}
   restore.forEach(o=>o.visible=false);
