@@ -364,7 +364,7 @@ body.is-touch .banner .b3{font-size:11px;margin-top:3px}
         <p class="hint">Sit or stand however you like, then press <b>B</b> (right controller) to recenter: your head becomes the driver's eyes. Right stick up/down raises or lowers the seat. <b>Y</b> changes view, <b>X</b> changes radio station.</p>
       </details>
       <p class="keys" id="gpKeys" hidden></p>
-      <p class="keys"><kbd>A</kbd>/<kbd>D</kbd> or <kbd>←</kbd>/<kbd>→</kbd> steer · <kbd>W</kbd>/<kbd>↑</kbd> gas · <kbd>S</kbd>/<kbd>↓</kbd> brake · <kbd>SPACE</kbd> boost · <kbd>C</kbd> camera · <kbd>P</kbd> autopilot · <kbd>T</kbd> weather · <kbd>ESC</kbd> pause · <kbd>F</kbd> full screen · <kbd>R</kbd> next radio station<br>🎮 Xbox / PlayStation controllers work too: plug one in or pair it, then press any button.<br>VR: right trigger gas · left trigger brake · thumbstick steer · grip boost · A autopilot · B recenter · Y view · X station</p>
+      <p class="keys"><kbd>A</kbd>/<kbd>D</kbd> or <kbd>←</kbd>/<kbd>→</kbd> steer · <kbd>W</kbd>/<kbd>↑</kbd> gas · <kbd>S</kbd>/<kbd>↓</kbd> brake · <kbd>SPACE</kbd> boost · <kbd>C</kbd> camera · <kbd>P</kbd> autopilot · <kbd>T</kbd> weather · <kbd>ESC</kbd> pause · <kbd>F</kbd> full screen · <kbd>R</kbd> next radio station<br>🎮 Xbox / PlayStation controllers work on screen and in VR: pair one, then press any button.<br>VR: right trigger gas · left trigger brake · thumbstick steer · grip boost · A autopilot · B recenter · Y view · X station</p>
       <div class="loading" id="loading">PAVING 36 KM OF HIGHWAY…</div>
     </div>
   </section>
@@ -2089,12 +2089,12 @@ const XRB={prev:{}};
 /* ---------- Xbox / PlayStation controllers (Gamepad API, standard mapping) */
 const GP={idx:-1,kind:'',prev:[],steer:0,gas:0,brake:0,boost:false,navT:0,navDir:'',focusEl:null,lastUse:0,
   B:{A:0,B:1,X:2,Y:3,LB:4,RB:5,LT:6,RT:7,VIEW:8,MENU:9,LS:10,RS:11,UP:12,DOWN:13,LEFT:14,RIGHT:15},
-  kindOf(id){id=id.toLowerCase();return /054c|playstation|dualsense|dualshock|wireless controller|ps4|ps5/.test(id)?'ps':'xbox'},
+  kindOf(id){id=id.toLowerCase();if(/xbox|045e|xinput/.test(id))return 'xbox';return /054c|playstation|dualsense|dualshock|wireless controller|ps4|ps5/.test(id)?'ps':'xbox'},
   name(){return this.kind==='ps'?'PlayStation controller':'Xbox controller'},
   lab(k){const ps={A:'✕',B:'○',X:'□',Y:'△',LB:'L1',RB:'R1',LT:'L2',RT:'R2',MENU:'OPTIONS',VIEW:'SHARE'},xb={A:'A',B:'B',X:'X',Y:'Y',LB:'LB',RB:'RB',LT:'LT',RT:'RT',MENU:'MENU',VIEW:'VIEW'};return (this.kind==='ps'?ps:xb)[k]},
   find(){const list=navigator.getGamepads?navigator.getGamepads():[];let g=null;
     if(this.idx>=0&&list[this.idx]&&list[this.idx].connected)g=list[this.idx];
-    else for(const c of list){if(c&&c.connected&&c.buttons.length>=12&&!/oculus|quest|openxr|touch/i.test(c.id)){g=c;break}}
+    else for(const c of list){if(c&&c.connected&&c.buttons.length>=12&&c.mapping!=='xr-standard'&&!/oculus|quest|openxr|touch|meta|pico|vive|index/i.test(c.id)){g=c;this.idx=c.index;if(!this.kind){this.kind=this.kindOf(c.id);gpHints()}break}}
     return g},
   val(g,i){const b=g.buttons[i];return b?(typeof b==='object'?b.value:b):0},
   down(g,i){const b=g.buttons[i];return !!b&&(b.pressed||b.value>.5)},
@@ -2107,8 +2107,9 @@ const GP={idx:-1,kind:'',prev:[],steer:0,gas:0,brake:0,boost:false,navT:0,navDir
     if(this.gas<.04)this.gas=0;if(this.brake<.04)this.brake=0;
     let any=false;for(let i=0;i<g.buttons.length;i++)if(this.down(g,i)){any=true;break}
     if(any||Math.abs(g.axes[0]||0)>.3||Math.abs(g.axes[1]||0)>.3){if(!this.lastUse){document.body.classList.add('gp-on')}this.lastUse=performance.now()}
-    const racing=state==='play'||state==='countdown';
-    if(racing){
+    const racing=state==='play'||state==='countdown',inVR=renderer.xr.isPresenting;
+    if(inVR){this.vr(g);this.clearFocus()}
+    else if(racing){
       if(this.hit(g,B.MENU))pauseGame();
       if(this.hit(g,B.X))toggleAP();
       if(this.hit(g,B.Y))cycleWx();
@@ -2116,9 +2117,28 @@ const GP={idx:-1,kind:'',prev:[],steer:0,gas:0,brake:0,boost:false,navT:0,navDir
       if(this.hit(g,B.RB))RADIO.step(1);if(this.hit(g,B.LB))RADIO.step(-1);
       if(this.hit(g,B.RS)&&renderer.xr.isPresenting)vrRecenter();
       this.clearFocus();
-    }else if(!renderer.xr.isPresenting){this.menu(g,dt)}
-    else if(state==='end'&&this.hit(g,B.A))startRun();
+    }else this.menu(g,dt);
     this.prev=g.buttons.map((b,i)=>this.down(g,i))},
+  vr(g){const B=this.B,racing=state==='play'||state==='countdown';
+    if(racing){
+      if(this.hit(g,B.MENU)){pauseGame();vrMsgT=0}
+      if(this.hit(g,B.X))toggleAP();
+      if(this.hit(g,B.Y))cycleWx();
+      if(this.hit(g,B.B)){const i2=(VR_VIEWS.indexOf(VR.view)+1)%VR_VIEWS.length;vrSetView(VR_VIEWS[i2])}
+      if(this.hit(g,B.VIEW)||this.hit(g,B.RS)||this.hit(g,B.LS))vrRecenter();
+      if(this.hit(g,B.UP)){seatStep(.05);vrMsg='SEAT '+(save.vr.seat>0?'+':'')+Math.round(save.vr.seat*100)+' CM';vrMsgT=1.5}
+      if(this.hit(g,B.DOWN)){seatStep(-.05);vrMsg='SEAT '+(save.vr.seat>0?'+':'')+Math.round(save.vr.seat*100)+' CM';vrMsgT=1.5}
+      if(this.hit(g,B.RB))RADIO.step(1);if(this.hit(g,B.LB))RADIO.step(-1);
+    }else if(state==='pause'){
+      if(this.hit(g,B.MENU)||this.hit(g,B.A))resumeGame();
+      else if(this.hit(g,B.B))this.exitVR();
+      else if(this.hit(g,B.Y)){resumeGame();startRun()}
+      if(this.hit(g,B.RB))RADIO.step(1);if(this.hit(g,B.LB))RADIO.step(-1);
+    }else if(state==='end'){
+      if(this.hit(g,B.A)||this.hit(g,B.MENU))startRun();
+      else if(this.hit(g,B.B))this.exitVR();
+    }else if(this.hit(g,B.A)||this.hit(g,B.MENU))startRun()},
+  exitVR(){const se=renderer.xr.getSession&&renderer.xr.getSession();if(se)se.end().catch(()=>{});setTimeout(()=>{if(state!=='title')toTitle()},60)},
   scr(){for(const id of ['end','pause','garage','title']){const e=$(id);if(e&&!e.hidden)return e}return null},
   items(root){return [...root.querySelectorAll('button,a[href],summary,select,input')].filter(e=>!e.disabled&&e.offsetParent!==null&&e.getClientRects().length&&!e.closest('[hidden]'))},
   clearFocus(){if(this.focusEl){this.focusEl.classList.remove('gp-focus');this.focusEl=null}},
@@ -2140,9 +2160,9 @@ const GP={idx:-1,kind:'',prev:[],steer:0,gas:0,brake:0,boost:false,navT:0,navDir
     if(this.hit(g,B.RB))RADIO.step(1);if(this.hit(g,B.LB))RADIO.step(-1);
     const rs=g.axes[3]||0;if(Math.abs(rs)>.2)root.scrollBy(0,rs*dt*900)}};
 function gpHints(){const e=$('gpKeys');if(!e)return;const L=k=>'<kbd>'+GP.lab(k)+'</kbd>';
-  e.innerHTML='🎮 '+GP.name()+': left stick steer · '+L('RT')+' gas · '+L('LT')+' brake · '+L('A')+' boost · '+L('B')+' camera · '+L('X')+' autopilot · '+L('Y')+' weather · '+L('LB')+'/'+L('RB')+' radio station · '+L('MENU')+' pause · d-pad/stick + '+L('A')+' to pick menu items';e.hidden=false}
-addEventListener('gamepadconnected',e=>{const g=e.gamepad;if(/oculus|quest|openxr|touch/i.test(g.id))return;GP.idx=g.index;GP.kind=GP.kindOf(g.id);GP.prev=[];gpHints();
-  toast('🎮 '+GP.name()+' connected. '+GP.lab('RT')+' gas, '+GP.lab('LT')+' brake, '+GP.lab('A')+' boost.',4500);GP.rumble(.4,160)});
+  e.innerHTML='🎮 '+GP.name()+': left stick steer · '+L('RT')+' gas · '+L('LT')+' brake · '+L('A')+' boost · '+L('B')+' camera · '+L('X')+' autopilot · '+L('Y')+' weather · '+L('LB')+'/'+L('RB')+' radio station · '+L('MENU')+' pause · d-pad/stick + '+L('A')+' to pick menu items<br>In VR: '+L('B')+' change view · '+L('VIEW')+' or stick click recenter · d-pad ↑/↓ seat height · '+L('MENU')+' pause';e.hidden=false}
+addEventListener('gamepadconnected',e=>{const g=e.gamepad;if(g.mapping==='xr-standard'||/oculus|quest|openxr|touch|meta|pico|vive|index/i.test(g.id))return;GP.idx=g.index;GP.kind=GP.kindOf(g.id);GP.prev=[];gpHints();
+  if(renderer.xr.isPresenting){vrMsg='🎮 '+GP.name().toUpperCase()+' CONNECTED';vrMsgT=3}toast('🎮 '+GP.name()+' connected. '+GP.lab('RT')+' gas, '+GP.lab('LT')+' brake, '+GP.lab('A')+' boost.',4500);GP.rumble(.4,160)});
 addEventListener('gamepaddisconnected',e=>{if(e.gamepad.index===GP.idx){GP.idx=-1;GP.clearFocus();toast('🎮 Controller disconnected.',3000)}});
 addEventListener('pointerdown',()=>{if(GP.focusEl)GP.clearFocus()},{capture:true});
 const inp={steer:0,gas:0,brake:0,boost:false};
@@ -2325,7 +2345,7 @@ function drawVRHud(){
   g.fillStyle=tl&&run.timeLeft<10?'#ff6b7d':'#ffffff';g.fillText(fmtTime(tl?run.timeLeft:run.elapsed),612,124);
   g.fillStyle='#48d597';g.font='700 30px "Barlow Condensed",sans-serif';g.fillText(C[dispCourse()].name,612,162);
   g.textAlign='center';g.fillStyle='#ffe08a';g.font='800 36px "Barlow Condensed",sans-serif';
-  let msg=state==='countdown'?(run.cdT>0?String(Math.ceil(run.cdT)):'GO'):state==='end'?run.result+' · PRESS A TO RACE AGAIN':(vrMsgT>0?vrMsg:(autopilot?'AUTOPILOT ON':''));
+  let msg=state==='countdown'?(run.cdT>0?String(Math.ceil(run.cdT)):'GO'):state==='pause'?(GP.idx>=0?'PAUSED · '+GP.lab('MENU')+' RESUME · '+GP.lab('Y')+' RESTART · '+GP.lab('B')+' EXIT VR':'PAUSED'):state==='end'?run.result+(GP.idx>=0?' · '+GP.lab('A')+' RACE AGAIN · '+GP.lab('B')+' EXIT VR':' · PRESS A TO RACE AGAIN'):(vrMsgT>0?vrMsg:(autopilot?'AUTOPILOT ON':''));
   if(!msg&&save.musicSrc==='radio'){g.fillStyle='#9fb4ff';g.font='700 26px "Barlow Condensed",sans-serif';msg='📻 '+RADIO.cur()[0]}
   g.fillText(msg,W2/2,222,W2-40);vrTex.needsUpdate=true;
 }
@@ -2536,7 +2556,7 @@ $('vrBtn').onclick=()=>{
   if(!navigator.xr||!xrSupported){toast('No VR headset is available to this page. On a Meta Quest, open the game in Meta Quest Browser and press ENTER VR. Some embedded viewers block WebXR; hosting the page on its own site avoids that.',7000);return}
   navigator.xr.requestSession('immersive-vr',{optionalFeatures:['local-floor']}).then(session=>{
     renderer.xr.setReferenceSpaceType('local');return renderer.xr.setSession(session).then(()=>{
-      xrOff.add(camera);camera.position.set(0,0,0);camera.rotation.set(0,0,0);VR.recenterAt=performance.now()+700;
+      xrOff.add(camera);camera.position.set(0,0,0);camera.rotation.set(0,0,0);VR.recenterAt=performance.now()+700;if(GP.find()){vrMsg='🎮 '+GP.name().toUpperCase()+' READY';vrMsgT=3}
       if(renderer.xr.setFoveation)renderer.xr.setFoveation(1);
       startRun();
       session.addEventListener('end',()=>{if(XRB.seatDirty){XRB.seatDirty=false;persist();renderVRSet()}vrHud.visible=false;vig.visible=false;scene.add(camera);player.cockpit.visible=false;player.body.visible=true;resize();camSnap=true;if(state==='play'||state==='countdown')pauseGame()});
