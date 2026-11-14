@@ -113,6 +113,15 @@ h1 em{font-style:normal;color:var(--amber)}
 @keyframes popup{0%{opacity:0;transform:translate(-50%,14px) scale(.9)}15%{opacity:1;transform:translate(-50%,0) scale(1.06)}70%{opacity:1}100%{opacity:0;transform:translate(-50%,-24px)}}
 body.is-touch .fxchips{top:64px}body.is-touch .fxchips span{font-size:10px;padding:3px 8px}body.is-touch .pop{font-size:20px;top:52%}
 .radio-st{font:600 12px Barlow,sans-serif;letter-spacing:.06em;color:var(--muted,#9aa3c7);min-height:15px;margin-top:2px}.radio-st[data-s=live]{color:#48d597}.radio-st[data-s=fail]{color:#ff8a8a}.radio-st[data-s=tap]{color:var(--amber)}#radioOpen{margin-top:8px;width:100%}
+#cbLayer{position:fixed;inset:0;z-index:40;touch-action:none;-webkit-user-select:none;user-select:none}
+#cbLayer .cb-bar{position:absolute;top:6px;left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:2}
+#cbLayer .cb-bar button{width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.35);background:rgba(0,0,0,.55);color:#fff;font-size:18px;opacity:.75}
+#cbLayer .cb-line{position:absolute;top:0;bottom:0;left:50%;width:2px;margin-left:-1px;background:rgba(255,255,255,.12)}
+#cbRotate{display:none;position:absolute;inset:0;background:#050713;color:#fff;font:700 20px Barlow,sans-serif;align-items:center;justify-content:center;text-align:center;padding:30px;line-height:1.5}
+@media (orientation:portrait){#cbRotate{display:flex}}
+body.cb-on #hud,body.cb-on .screen,body.cb-on #toast,body.cb-on .touchpad{display:none!important}
+#cbPick .card .row{margin-top:10px}#cbPick .btn{width:100%}
+.primary-lite{border-color:var(--amber,#ffb22e)!important;color:var(--amber,#ffb22e)!important}
 .gp-focus{outline:3px solid var(--amber,#ffb22e)!important;outline-offset:2px;box-shadow:0 0 0 6px rgba(255,178,46,.25)!important}
 .tum{color:var(--amber);text-decoration:none;letter-spacing:.04em;text-transform:none}.tum:hover{text-decoration:underline}
 .vrset{border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:rgba(255,255,255,.03)}
@@ -343,6 +352,7 @@ body.is-touch .banner .b3{font-size:11px;margin-top:3px}
           <button class="btn" id="garageBtn">⚙ GARAGE</button>
           <button class="btn" id="fsBtn">⛶ FULL SCREEN</button>
           <button class="btn" id="vrBtn">◉ ENTER VR</button>
+          <button class="btn" id="cbBtn">📱 CARDBOARD VR</button>
           <button class="btn" id="soundBtn">♪ SOUND ON</button>
           <button class="btn" id="musicBtn">♫ MUSIC · GAME</button>
           <button class="btn" id="gfxBtn">▣ GRAPHICS AUTO</button>
@@ -359,12 +369,13 @@ body.is-touch .banner .b3{font-size:11px;margin-top:3px}
         <div class="vrgrid">
           <span class="label">View</span><div class="seg" id="vrView"></div>
           <span class="label">Comfort</span><div class="seg" id="vrVig"></div>
+          <span class="label">Cardboard lens</span><div class="seg" id="vrLens"></div>
           <span class="label">Seat height</span><div class="seg" id="vrSeat"><button id="seatDn" aria-label="Lower seat">−</button><button id="seatVal" disabled>0 cm</button><button id="seatUp" aria-label="Raise seat">+</button></div>
         </div>
         <p class="hint">Sit or stand however you like, then press <b>B</b> (right controller) to recenter: your head becomes the driver's eyes. Right stick up/down raises or lowers the seat. <b>Y</b> changes view, <b>X</b> changes radio station.</p>
       </details>
       <p class="keys" id="gpKeys" hidden></p>
-      <p class="keys"><kbd>A</kbd>/<kbd>D</kbd> or <kbd>←</kbd>/<kbd>→</kbd> steer · <kbd>W</kbd>/<kbd>↑</kbd> gas · <kbd>S</kbd>/<kbd>↓</kbd> brake · <kbd>SPACE</kbd> boost · <kbd>C</kbd> camera · <kbd>P</kbd> autopilot · <kbd>T</kbd> weather · <kbd>ESC</kbd> pause · <kbd>F</kbd> full screen · <kbd>R</kbd> next radio station<br>🎮 Xbox / PlayStation controllers work on screen and in VR: pair one, then press any button.<br>VR: right trigger gas · left trigger brake · thumbstick steer · grip boost · A autopilot · B recenter · Y view · X station</p>
+      <p class="keys"><kbd>A</kbd>/<kbd>D</kbd> or <kbd>←</kbd>/<kbd>→</kbd> steer · <kbd>W</kbd>/<kbd>↑</kbd> gas · <kbd>S</kbd>/<kbd>↓</kbd> brake · <kbd>SPACE</kbd> boost · <kbd>C</kbd> camera · <kbd>P</kbd> autopilot · <kbd>T</kbd> weather · <kbd>ESC</kbd> pause · <kbd>F</kbd> full screen · <kbd>R</kbd> next radio station<br>🎮 Xbox / PlayStation controllers work on screen and in VR: pair one, then press any button. 📱 No headset? Use CARDBOARD VR with any phone viewer.<br>VR: right trigger gas · left trigger brake · thumbstick steer · grip boost · A autopilot · B recenter · Y view · X station</p>
       <div class="loading" id="loading">PAVING 36 KM OF HIGHWAY…</div>
     </div>
   </section>
@@ -418,6 +429,21 @@ body.is-touch .banner .b3{font-size:11px;margin-top:3px}
   </section>
 
   <div id="toast" role="status" hidden></div>
+  <section id="cbPick" class="screen modal" hidden>
+    <div class="card">
+      <div class="eyebrow">PHONE VR · GOOGLE CARDBOARD &amp; VIEWERS</div><h2>Cardboard VR</h2>
+      <p class="hint">Turn your phone sideways, put it in the viewer with the screen's center line on the viewer's divider, and look around. Your head moves the camera in 360°.</p>
+      <div class="row"><button class="btn primary" id="cbPlay">▶ PLAY · TILT TO STEER</button></div>
+      <div class="row"><button class="btn" id="cbWatch">👁 WATCH · AUTOPILOT RIDE</button></div>
+      <p class="hint"><b>Play:</b> the car drives itself forward. Tilt your head left or right to steer. Hold the screen or viewer button to brake, and tap it for a nitro boost.<br><b>Watch:</b> sit back and look around while the car drives itself.<br>An Xbox or PlayStation controller works in both.</p>
+      <div class="row"><button class="btn" id="cbCancel">CANCEL</button></div>
+    </div>
+  </section>
+  <div id="cbLayer" hidden>
+    <div class="cb-bar"><button id="cbExit" aria-label="Exit Cardboard VR">✕</button><button id="cbCenter" aria-label="Recenter view">⟲</button></div>
+    <div class="cb-line"></div>
+    <div id="cbRotate">↻ Turn your phone sideways (landscape) and place it in the viewer</div>
+  </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -652,10 +678,11 @@ function paintFX(m){m.onBeforeCompile=sh=>{addFX(sh);sh.uniforms.uSkyRim=FX.skyR
 	#include <tonemapping_fragment>`)};m.customProgramCacheKey=()=>'carpaint';return m}
 const scene=new THREE.Scene();
 scene.fog=new THREE.Fog(0xf0c8a8,60,900);
+var CBV={on:false};
 const camera=new THREE.PerspectiveCamera(68,1,0.1,2400);
 scene.add(camera);
 const rig=new THREE.Group();scene.add(rig);
-function resize(){const w=stage.clientWidth||innerWidth,h=stage.clientHeight||innerHeight;if(renderer.xr.isPresenting)return;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix()}
+function resize(){const w=stage.clientWidth||innerWidth,h=stage.clientHeight||innerHeight;if(renderer.xr.isPresenting)return;if(CBV.on){CBV.resize();return}renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix()}
 addEventListener('resize',resize);resize();
 // full screen: the whole game element, with vendor fallbacks; phones also try to lock landscape
 const fsEl=()=>document.fullscreenElement||document.webkitFullscreenElement;
@@ -1691,6 +1718,7 @@ function vrSetView(v){VR.view=save.vr.view=v;persist();renderVRSet();vrMsg='VIEW
 function renderVRSet(){
   seg($('vrView'),VR_VIEWS.map(v=>v.toUpperCase()),VR_VIEWS.indexOf(save.vr.view),i=>vrSetView(VR_VIEWS[i]));
   seg($('vrVig'),['VIGNETTE ON','OFF'],save.vr.vignette?0:1,i=>{save.vr.vignette=i===0;persist();renderVRSet()});
+  seg($('vrLens'),['CORRECTION ON','OFF'],save.vr.lens===false?1:0,i=>{save.vr.lens=i===0;persist();renderVRSet();if(CBV.on)CBV.resize()});
   $('seatVal').textContent=(save.vr.seat>0?'+':'')+Math.round(save.vr.seat*100)+' cm'}
 
 /* =========================================================
@@ -2019,7 +2047,7 @@ function spawnChunk(ci){
     else if(q<.68)itAdd('pad',ss,x);else if(q<.82)itAdd('nitro',ss,x);else if(q<.91)itAdd('shield',ss,x);else itAdd(timed?'clock':'coin',ss,x)}
 }
 let popT=0;
-function pop(text,cls){const el=$('pop');el.textContent=text;el.className='pop '+(cls||'good');void el.offsetWidth;el.classList.add('show');popT=.9;if(renderer.xr.isPresenting){vrMsg=text;vrMsgT=1}}
+function pop(text,cls){const el=$('pop');el.textContent=text;el.className='pop '+(cls||'good');void el.offsetWidth;el.classList.add('show');popT=.9;if(inVR()){vrMsg=text;vrMsgT=1}}
 function itemAhead(s,x,range){for(const it of ITEMS.list){if(it.hit||it.def.kind==='pick'||it.def.kind==='pad')continue;const ds=it.s-s;if(ds>0&&ds<range&&Math.abs(it.x-x)<it.def.w+1)return it}return null}
 function knock(it,v){it.hit=true;if(it.def.heavy||it.def.kind!=='obs'){it.done=it.def.kind==='pick';return}it.fvy=4+Math.random()*4+v*.06;it.fs=v*.55;it.fvx=(Math.random()-.5)*6;it.spin=(Math.random()-.5)*10}
 function hitItem(it){
@@ -2107,15 +2135,15 @@ const GP={idx:-1,kind:'',prev:[],steer:0,gas:0,brake:0,boost:false,navT:0,navDir
     if(this.gas<.04)this.gas=0;if(this.brake<.04)this.brake=0;
     let any=false;for(let i=0;i<g.buttons.length;i++)if(this.down(g,i)){any=true;break}
     if(any||Math.abs(g.axes[0]||0)>.3||Math.abs(g.axes[1]||0)>.3){if(!this.lastUse){document.body.classList.add('gp-on')}this.lastUse=performance.now()}
-    const racing=state==='play'||state==='countdown',inVR=renderer.xr.isPresenting;
-    if(inVR){this.vr(g);this.clearFocus()}
+    const racing=state==='play'||state==='countdown',vrNow=inVR();
+    if(vrNow){this.vr(g);this.clearFocus()}
     else if(racing){
       if(this.hit(g,B.MENU))pauseGame();
       if(this.hit(g,B.X))toggleAP();
       if(this.hit(g,B.Y))cycleWx();
       if(this.hit(g,B.B)||this.hit(g,B.VIEW))cycleCam();
       if(this.hit(g,B.RB))RADIO.step(1);if(this.hit(g,B.LB))RADIO.step(-1);
-      if(this.hit(g,B.RS)&&renderer.xr.isPresenting)vrRecenter();
+      if(this.hit(g,B.RS)&&inVR())vrRecenter();
       this.clearFocus();
     }else this.menu(g,dt);
     this.prev=g.buttons.map((b,i)=>this.down(g,i))},
@@ -2138,7 +2166,7 @@ const GP={idx:-1,kind:'',prev:[],steer:0,gas:0,brake:0,boost:false,navT:0,navDir
       if(this.hit(g,B.A)||this.hit(g,B.MENU))startRun();
       else if(this.hit(g,B.B))this.exitVR();
     }else if(this.hit(g,B.A)||this.hit(g,B.MENU))startRun()},
-  exitVR(){const se=renderer.xr.getSession&&renderer.xr.getSession();if(se)se.end().catch(()=>{});setTimeout(()=>{if(state!=='title')toTitle()},60)},
+  exitVR(){if(CBV.on){CBV.stop(true);return}const se=renderer.xr.getSession&&renderer.xr.getSession();if(se)se.end().catch(()=>{});setTimeout(()=>{if(state!=='title')toTitle()},60)},
   scr(){for(const id of ['end','pause','garage','title']){const e=$(id);if(e&&!e.hidden)return e}return null},
   items(root){return [...root.querySelectorAll('button,a[href],summary,select,input')].filter(e=>!e.disabled&&e.offsetParent!==null&&e.getClientRects().length&&!e.closest('[hidden]'))},
   clearFocus(){if(this.focusEl){this.focusEl.classList.remove('gp-focus');this.focusEl=null}},
@@ -2162,7 +2190,7 @@ const GP={idx:-1,kind:'',prev:[],steer:0,gas:0,brake:0,boost:false,navT:0,navDir
 function gpHints(){const e=$('gpKeys');if(!e)return;const L=k=>'<kbd>'+GP.lab(k)+'</kbd>';
   e.innerHTML='🎮 '+GP.name()+': left stick steer · '+L('RT')+' gas · '+L('LT')+' brake · '+L('A')+' boost · '+L('B')+' camera · '+L('X')+' autopilot · '+L('Y')+' weather · '+L('LB')+'/'+L('RB')+' radio station · '+L('MENU')+' pause · d-pad/stick + '+L('A')+' to pick menu items<br>In VR: '+L('B')+' change view · '+L('VIEW')+' or stick click recenter · d-pad ↑/↓ seat height · '+L('MENU')+' pause';e.hidden=false}
 addEventListener('gamepadconnected',e=>{const g=e.gamepad;if(g.mapping==='xr-standard'||/oculus|quest|openxr|touch|meta|pico|vive|index/i.test(g.id))return;GP.idx=g.index;GP.kind=GP.kindOf(g.id);GP.prev=[];gpHints();
-  if(renderer.xr.isPresenting){vrMsg='🎮 '+GP.name().toUpperCase()+' CONNECTED';vrMsgT=3}toast('🎮 '+GP.name()+' connected. '+GP.lab('RT')+' gas, '+GP.lab('LT')+' brake, '+GP.lab('A')+' boost.',4500);GP.rumble(.4,160)});
+  if(inVR()){vrMsg='🎮 '+GP.name().toUpperCase()+' CONNECTED';vrMsgT=3}toast('🎮 '+GP.name()+' connected. '+GP.lab('RT')+' gas, '+GP.lab('LT')+' brake, '+GP.lab('A')+' boost.',4500);GP.rumble(.4,160)});
 addEventListener('gamepaddisconnected',e=>{if(e.gamepad.index===GP.idx){GP.idx=-1;GP.clearFocus();toast('🎮 Controller disconnected.',3000)}});
 addEventListener('pointerdown',()=>{if(GP.focusEl)GP.clearFocus()},{capture:true});
 const inp={steer:0,gas:0,brake:0,boost:false};
@@ -2187,6 +2215,7 @@ function readInput(){
   }
   if(XRB.seatDirty&&!session){XRB.seatDirty=false;persist();renderVRSet()}
   if(isTouch&&save.autoGas&&!session&&!brake)gas=1;
+  if(CBV.on&&!autopilot&&state==='play'){steer=CBV.tiltSteer();if(!GP.find()||GP.gas<.05){gas=CBV.hold?0:1}brake=Math.max(brake,CBV.hold?1:0);boost=boost||CBV.boostT>0}
   if(Math.abs(GP.steer)>Math.abs(steer))steer=GP.steer;gas=Math.max(gas,GP.gas);brake=Math.max(brake,GP.brake);boost=boost||GP.boost;
   inp.steer=clamp(steer,-1,1);inp.gas=gas;inp.brake=brake;inp.boost=boost;
 }
@@ -2374,7 +2403,7 @@ function addXP(n){if(n<=0)return;const before=lvlInfo().L;save.xp=(save.xp||0)+n
   refreshLevel()}
 function refreshLevel(){const i=lvlInfo();$('lvlNum').textContent='LV '+i.L;$('xpFill').style.transform='scaleX('+(i.max?1:i.into/i.need).toFixed(3)+')';$('xpText').textContent=i.max?'MAX LEVEL':fmtInt(i.into)+' / '+fmtInt(i.need)+' XP';$('gLvl').textContent='DRIVER LV '+i.L}
 function startRun(){
-  rearmBlack();if(renderer.xr.isPresenting)VR.recenterAt=performance.now()+3400;
+  rearmBlack();if(inVR())VR.recenterAt=performance.now()+3400;
   if(!ready){toast('Still building the road. One moment.');return}
   if(!save.owned.includes(save.car)){toast('Buy this ride in the garage first, or pick one you own.');return}
   setupRun();state='countdown';run.cdT=3;showScreen(null);$('hud').hidden=false;autopilot=false;syncToggles();
@@ -2550,9 +2579,10 @@ function renderGarage(){
    WebXR
    ========================================================= */
 let xrSupported=false;
-if(navigator.xr&&navigator.xr.isSessionSupported){navigator.xr.isSessionSupported('immersive-vr').then(ok=>{xrSupported=ok;if(!ok)$('vrBtn').textContent='◉ VR NOT DETECTED'}).catch(()=>{$('vrBtn').textContent='◉ VR NOT DETECTED'})}else $('vrBtn').textContent='◉ VR NOT DETECTED';
+if(navigator.xr&&navigator.xr.isSessionSupported){navigator.xr.isSessionSupported('immersive-vr').then(ok=>{xrSupported=ok;if(!ok)$('vrBtn').textContent=isTouch?'◉ VR · USE CARDBOARD':'◉ VR NOT DETECTED'}).catch(()=>{$('vrBtn').textContent='◉ VR NOT DETECTED'})}else $('vrBtn').textContent='◉ VR NOT DETECTED';
 $('vrBtn').onclick=()=>{
   AU.init();
+  if((!navigator.xr||!xrSupported)&&isTouch){CBV.pick();return}
   if(!navigator.xr||!xrSupported){toast('No VR headset is available to this page. On a Meta Quest, open the game in Meta Quest Browser and press ENTER VR. Some embedded viewers block WebXR; hosting the page on its own site avoids that.',7000);return}
   navigator.xr.requestSession('immersive-vr',{optionalFeatures:['local-floor']}).then(session=>{
     renderer.xr.setReferenceSpaceType('local');return renderer.xr.setSession(session).then(()=>{
@@ -2563,6 +2593,81 @@ $('vrBtn').onclick=()=>{
     });
   }).catch(err=>toast('The headset could not start VR here: '+(err&&err.message?err.message:'unknown error')+'.',6000));
 };
+
+/* ---------- Cardboard / phone VR: split-screen stereo with lens correction and motion-sensor head tracking */
+function inVR(){return renderer.xr.isPresenting||(CBV.on)}
+CBV=(()=>{
+  const st={on:false,watch:false,ori:null,got:false,hold:false,boostT:0,downT:0,lock:null,fs:false,dragY:0,dragP:0,drag:null,prevFov:68,
+    q:new THREE.Quaternion(),eyeL:null,eyeR:null,stereo:new THREE.StereoCamera()};
+  st.stereo.eyeSep=.064;
+  const fsCam=new THREE.OrthographicCamera(-1,1,1,-1,0,1),fsScene=new THREE.Scene();
+  const tri=new THREE.BufferGeometry();tri.setAttribute('position',new THREE.Float32BufferAttribute([-1,-1,0,3,-1,0,-1,3,0],3));tri.setAttribute('uv',new THREE.Float32BufferAttribute([0,0,2,0,0,2],2));
+  const mat=new THREE.ShaderMaterial({depthTest:false,depthWrite:false,uniforms:{tL:{value:null},tR:{value:null},asp:{value:1},k1:{value:.26},k2:{value:.1},on:{value:1}},
+    vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}',
+    fragmentShader:`uniform sampler2D tL,tR;uniform float asp,k1,k2,on;varying vec2 vUv;
+      void main(){bool left=vUv.x<.5;vec2 l=vec2(fract(vUv.x*2.),vUv.y);vec2 p=(l-.5)*2.;
+        vec2 q=p*vec2(asp,1.);float r2=dot(q,q)/max(1.,asp*asp)*1.6;float f=mix(1.,(1.+k1*r2+k2*r2*r2)/(1.+k1*.9+k2*.6),on);
+        vec2 s=p*f*.5+.5;if(s.x<0.||s.x>1.||s.y<0.||s.y>1.){gl_FragColor=vec4(0.,0.,0.,1.);return;}
+        vec3 c=left?texture2D(tL,s).rgb:texture2D(tR,s).rgb;float e=smoothstep(1.,.86,max(abs(s.x-.5),abs(s.y-.5))*2.);
+        gl_FragColor=vec4(c*mix(1.,e,on),1.);}`});
+  const quad=new THREE.Mesh(tri,mat);quad.frustumCulled=false;fsScene.add(quad);
+  function mkRT(w,h){return new THREE.WebGLRenderTarget(w,h,{minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter,depthBuffer:true})}
+  st.resize=()=>{const w=innerWidth,h=innerHeight;renderer.setSize(w,h);const ds=new THREE.Vector2();renderer.getDrawingBufferSize(ds);
+    const sc=gfxLow?.7:.9,ew=Math.max(64,Math.round(ds.x/2*sc)),eh=Math.max(64,Math.round(ds.y*sc));
+    if(!st.eyeL){st.eyeL=mkRT(ew,eh);st.eyeR=mkRT(ew,eh)}else{st.eyeL.setSize(ew,eh);st.eyeR.setSize(ew,eh)}
+    camera.aspect=(w/2)/h;camera.fov=88;camera.updateProjectionMatrix();mat.uniforms.asp.value=(w/2)/h;mat.uniforms.on.value=save.vr.lens===false?0:1};
+  // motion sensors → head rotation (same math as three.js DeviceOrientationControls)
+  const zee=new THREE.Vector3(0,0,1),q0=new THREE.Quaternion(),q1=new THREE.Quaternion(-Math.sqrt(.5),0,0,Math.sqrt(.5)),eu=new THREE.Euler(),tq=new THREE.Quaternion();
+  function onOri(e){if(e.alpha==null&&e.beta==null)return;st.ori=e;st.got=true}
+  st.head=dt=>{if(st.boostT>0)st.boostT-=dt;
+    if(st.got&&st.ori){const o=st.ori,D=Math.PI/180,ang=((screen.orientation&&screen.orientation.angle)||window.orientation||0)*D;
+      eu.set((o.beta||0)*D,(o.alpha||0)*D,-(o.gamma||0)*D,'YXZ');tq.setFromEuler(eu);tq.multiply(q1);tq.multiply(q0.setFromAxisAngle(zee,-ang));
+      if(st.q.dot(tq)<0)tq.set(-tq.x,-tq.y,-tq.z,-tq.w);st.q.slerp(tq,Math.min(1,dt*30))}
+    else{eu.set(st.dragP,st.dragY,0,'YXZ');st.q.setFromEuler(eu)}
+    camera.quaternion.copy(st.q);camera.position.set(0,0,0)};
+  st.tiltSteer=()=>{eu.setFromQuaternion(camera.quaternion,'YXZ');const r=eu.z;return Math.abs(r)<.05?0:clamp(-(r-Math.sign(r)*.05)/.3,-1,1)};
+  st.render=()=>{rig.updateMatrixWorld(true);st.stereo.update(camera);
+    renderer.setRenderTarget(st.eyeL);renderer.render(scene,st.stereo.cameraL);
+    renderer.setRenderTarget(st.eyeR);renderer.render(scene,st.stereo.cameraR);
+    renderer.setRenderTarget(null);mat.uniforms.tL.value=st.eyeL.texture;mat.uniforms.tR.value=st.eyeR.texture;renderer.render(fsScene,fsCam)};
+  st.pick=()=>{AU.init();$('cbPick').hidden=false;$('title').hidden=true};
+  st.start=async watch=>{$('cbPick').hidden=true;
+    try{if(window.DeviceOrientationEvent&&typeof DeviceOrientationEvent.requestPermission==='function'){const r=await DeviceOrientationEvent.requestPermission();if(r!=='granted')toast('Motion access was declined, so head tracking is off. Drag on the screen to look around.',6000)}}catch(_){}
+    try{if(document.documentElement.requestFullscreen&&!document.fullscreenElement){await document.documentElement.requestFullscreen({navigationUI:'hide'});st.fs=true}}catch(_){}
+    try{if(screen.orientation&&screen.orientation.lock)await screen.orientation.lock('landscape')}catch(_){}
+    try{if(navigator.wakeLock)navigator.wakeLock.request('screen').then(l=>{st.lock=l}).catch(()=>{})}catch(_){}
+    addEventListener('deviceorientation',onOri);st.got=false;st.dragY=st.dragP=0;st.watch=watch;
+    st.on=true;document.body.classList.add('cb-on');$('cbLayer').hidden=false;st.prevFov=camera.fov;
+    xrOff.add(camera);camera.position.set(0,0,0);camera.rotation.set(0,0,0);st.resize();
+    startRun();if(watch&&!autopilot)toggleAP();VR.recenterAt=performance.now()+600;
+    vrMsg=watch?'WATCH MODE · LOOK AROUND':'TILT YOUR HEAD TO STEER';vrMsgT=3.5;
+    setTimeout(()=>{if(st.on&&!st.got){vrMsg='NO MOTION SENSOR · DRAG TO LOOK';vrMsgT=4}},1800)};
+  st.stop=toMenu=>{if(!st.on)return;st.on=false;removeEventListener('deviceorientation',onOri);document.body.classList.remove('cb-on');$('cbLayer').hidden=true;
+    try{if(st.lock)st.lock.release()}catch(_){}st.lock=null;try{if(screen.orientation&&screen.orientation.unlock)screen.orientation.unlock()}catch(_){}
+    try{if(st.fs&&document.fullscreenElement)document.exitFullscreen()}catch(_){}st.fs=false;
+    vrHud.visible=false;vig.visible=false;scene.add(camera);camera.fov=st.prevFov;player.cockpit.visible=false;player.body.visible=true;player.driver.visible=true;resize();camSnap=true;
+    if(toMenu)toTitle();else if(state==='play'||state==='countdown')pauseGame()};
+  // the viewer button / screen taps: tap = nitro, hold = brake; tap also resumes, restarts
+  const L=$('cbLayer');
+  L.addEventListener('pointerdown',e=>{if(e.target.closest('.cb-bar'))return;e.preventDefault();st.downT=performance.now();
+    if(!st.got&&e.pointerType==='mouse'){st.drag={x:e.clientX,y:e.clientY,yaw:st.dragY,p:st.dragP};return}
+    if(!st.got&&e.pointerType!=='mouse'&&!st.drag){st.drag={x:e.clientX,y:e.clientY,yaw:st.dragY,p:st.dragP}}
+    st.holdTimer=setTimeout(()=>{if(state==='play'&&!autopilot)st.hold=true},260)});
+  L.addEventListener('pointermove',e=>{if(!st.drag)return;st.dragY=st.drag.yaw-(e.clientX-st.drag.x)*.006;st.dragP=clamp(st.drag.p-(e.clientY-st.drag.y)*.006,-1.4,1.4)});
+  const up=()=>{clearTimeout(st.holdTimer);const short=performance.now()-st.downT<260,moved=st.drag&&(Math.abs(st.dragY-st.drag.yaw)+Math.abs(st.dragP-st.drag.p))>.05;st.drag=null;
+    if(st.hold){st.hold=false;return}if(!short||moved)return;
+    if(state==='pause')resumeGame();else if(state==='end')startRun();else if(state==='play'&&!autopilot&&P.boost>.1){st.boostT=1.4;vrMsg='NITRO';vrMsgT=.8}};
+  L.addEventListener('pointerup',up);L.addEventListener('pointercancel',up);
+  $('cbExit').onclick=()=>st.stop(true);$('cbCenter').onclick=()=>{if(!st.got){st.dragY=st.dragP=0}vrRecenter()};
+  document.addEventListener('fullscreenchange',()=>{if(st.on&&st.fs&&!document.fullscreenElement){st.fs=false;st.stop(false)}});
+  addEventListener('orientationchange',()=>setTimeout(()=>{if(st.on)st.resize()},300));
+  return st})();
+$('cbBtn').onclick=()=>CBV.pick();$('cbPlay').onclick=()=>CBV.start(false);$('cbWatch').onclick=()=>CBV.start(true);
+$('cbCancel').onclick=()=>{$('cbPick').hidden=true;$('title').hidden=false};
+// recognise the kind of headset this device can use
+(function detectHeadsets(){const phone=isTouch&&/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent)&&'DeviceOrientationEvent' in window;
+  if(phone){$('cbBtn').classList.add('primary-lite');$('cbBtn').textContent='📱 CARDBOARD VR · READY'}
+  const check=()=>{if(xrSupported&&!phone)$('cbBtn').textContent='📱 CARDBOARD / PHONE VR'};setTimeout(check,1500)})();
 
 /* =========================================================
    Post-processing: bloom, sun shafts, lens flare, grading, speed FX
@@ -2690,9 +2795,9 @@ function frame(t,xf){if(ctxLost)return;try{frameMain(t,xf)}catch(e){console.erro
     else if(frameErrs===12&&!gfxLow){setTier('low');applyGfx()}}}
 function frameMain(t){
   const rawDt=lastT?(t-lastT)/1000:.016;perfNow=t;const dt=Math.min(.05,rawDt);lastT=t;
-  const xr=renderer.xr.isPresenting;
+  const xr=renderer.xr.isPresenting||CBV.on;if(CBV.on)CBV.head(dt);
   const playing=state==='play'||state==='countdown';
-  if((state==='play'||state==='title'||state==='garage')&&!xr&&ready&&!document.hidden){const raw=Math.min(1,rawDt);fpsAcc+=raw;fpsN++;
+  if((state==='play'||state==='title'||state==='garage')&&!renderer.xr.isPresenting&&ready&&!document.hidden){const raw=Math.min(1,rawDt);fpsAcc+=raw;fpsN++;
     if(fpsAcc>4){const fps=fpsN/fpsAcc;fpsAcc=0;fpsN=0;
       if(fps<14&&!gfxLow){stepDown('The game was running very slowly');}
       else if(save.gfx==='auto'&&!gfxLow){if(fps<34&&gfxUltra){setTier('high');applyGfx();toast('Switched to HIGH graphics to keep the game smooth. Pick ULTRA under GRAPHICS to bring it back.',6000)}
@@ -2762,7 +2867,7 @@ function frameMain(t){
   if(POST.on&&POST.ok&&!xr){
     const sp=(state==='play')?clamp((P.v/Math.max(ST.vmax,1)-.72)*2.2,0,1)*.55+(P.boosting?.45:0):0;
     try{POST.render(dt,sp,P.boosting&&state==='play'?1:0)}catch(e){console.error(e);POST.ok=false;renderer.setRenderTarget(null);toast('Screen effects are not supported on this device, so they are off.');renderer.render(scene,camera)}
-  }else renderer.render(scene,camera);
+  }else if(CBV.on)CBV.render();else renderer.render(scene,camera);
   checkBlack(rawDt);
 }
 
